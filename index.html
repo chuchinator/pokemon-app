@@ -267,7 +267,8 @@
 
 <script>
 const STORAGE_KEY = 'pokefolio_cards_v1';
-const API_BASE = 'https://api.pokemontcg.io/v2';
+const API_BASE = 'https://pokemon-tcg-api.p.rapidapi.com';
+const API_HEADERS = { 'X-Rapidapi-Key': '0ae5635aa9msh1dc8d338c290acdp1bdd67jsnd7e180a9511c', 'X-Rapidapi-Host': 'pokemon-tcg-api.p.rapidapi.com', 'Content-Type': 'application/json' };
 const MAX_IMAGE_WIDTH = 600;
 const JPEG_QUALITY = 0.75;
 
@@ -419,16 +420,16 @@ function render() {
 async function searchApi(query) {
   if (acAbort) acAbort.abort();
   acAbort = new AbortController();
-  const url = `${API_BASE}/cards?q=name:"*${encodeURIComponent(query)}*"&pageSize=12&orderBy=-set.releaseDate`;
-  const res = await fetch(url, { signal: acAbort.signal });
+  const url = `${API_BASE}/cards?name=${encodeURIComponent(query)}&pageSize=12`;
+  const res = await fetch(url, { signal: acAbort.signal, headers: API_HEADERS });
   if (!res.ok) throw new Error('API ' + res.status);
   const json = await res.json();
   return json.data || [];
 }
 function extractPrice(card) {
-  if (!card.cardmarket || !card.cardmarket.prices) return null;
-  const p = card.cardmarket.prices;
-  return p.averageSellPrice || p.trendPrice || p.avg7 || p.avg30 || null;
+  if (!card.prices || !card.prices.cardmarket) return null;
+  const p = card.prices.cardmarket;
+  return p['7d_average'] || p['30d_average'] || p.lowest_near_mint || null;
 }
 function showAutocomplete(html) { const ac = document.getElementById('autocomplete'); ac.innerHTML = html; ac.classList.add('show'); }
 function hideAutocomplete() { document.getElementById('autocomplete').classList.remove('show'); }
@@ -446,9 +447,9 @@ function onNameInput() {
       if (results.length === 0) { showAutocomplete('<div class="ac-empty">No cards found</div>'); return; }
       showAutocomplete(results.map(card => {
         const price = extractPrice(card);
-        const img = card.images && card.images.small ? card.images.small : '';
-        const setName = card.set ? card.set.name : '';
-        const number = card.number ? `#${card.number}` : '';
+        const img = card.image || '';
+        const setName = card.episode ? card.episode.name : '';
+        const number = card.card_code_number ? card.card_code_number : '';
         return `<div class="ac-item" data-apiid="${esc(card.id)}">${img ? `<img class="ac-thumb" src="${esc(img)}" alt="" loading="lazy">` : '<div class="ac-thumb"></div>'}<div style="min-width:0;"><div class="ac-name">${esc(card.name)}</div><div class="ac-meta">${esc(setName)} ${esc(number)} · ${esc(card.rarity || '')}</div></div><div class="ac-price">${price ? fmt(price) : '—'}</div></div>`;
       }).join(''));
     } catch (e) {
@@ -460,23 +461,23 @@ function onNameInput() {
 async function selectAutocompleteItem(apiId) {
   hideAutocomplete();
   try {
-    const res = await fetch(`${API_BASE}/cards/${encodeURIComponent(apiId)}`);
+    const res = await fetch(`${API_BASE}/cards/${encodeURIComponent(apiId)}`, { headers: API_HEADERS });
     if (!res.ok) throw new Error('Lookup failed');
     const { data: card } = await res.json();
     suppressAcOnce = true;
     document.getElementById('f-name').value = card.name || '';
-    document.getElementById('f-set').value = (card.set && card.set.name) || '';
-    document.getElementById('f-number').value = card.number || '';
+    document.getElementById('f-set').value = (card.episode && card.episode.name) || '';
+    document.getElementById('f-number').value = card.card_code_number || '';
     const price = extractPrice(card);
     if (price && !document.getElementById('f-value').value) {
       document.getElementById('f-value').value = price.toFixed(2);
     }
     const nameEl = document.getElementById('f-name');
     nameEl.dataset.apiid = card.id;
-    nameEl.dataset.image = (card.images && card.images.small) || '';
-    nameEl.dataset.imageLarge = (card.images && card.images.large) || '';
-    if (!pendingPhoto && card.images && card.images.small) {
-      setPhotoPreview(card.images.small);
+    nameEl.dataset.image = card.image || '';
+    nameEl.dataset.imageLarge = card.image || '';
+    if (!pendingPhoto && card.image) {
+      setPhotoPreview(card.image);
     }
     toast('Card found — price loaded', 'success');
   } catch (e) { toast('Could not load card details', 'error'); }
@@ -484,7 +485,7 @@ async function selectAutocompleteItem(apiId) {
 
 async function refreshOnePrice(card) {
   if (!card.apiId) return null;
-  const res = await fetch(`${API_BASE}/cards/${encodeURIComponent(card.apiId)}`);
+  const res = await fetch(`${API_BASE}/cards/${encodeURIComponent(card.apiId)}`, { headers: API_HEADERS });
   if (!res.ok) throw new Error('Lookup failed');
   const { data } = await res.json();
   const price = extractPrice(data);
