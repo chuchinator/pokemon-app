@@ -154,19 +154,19 @@ function PortfolioApp({ auth }) {
   }, []);
 
   const refreshAllPrices = useCallback(async () => {
-    const enCards = cards.filter((c) => c.lang === 'EN' && c.apiId);
-    if (enCards.length === 0) {
-      showToast('No English cards with auto-pricing yet');
+    const linked = cards.filter((c) => c.apiId);
+    if (linked.length === 0) {
+      showToast('No TCGdex-linked cards to refresh yet');
       return;
     }
-    showToast(`Refreshing ${enCards.length} card${enCards.length > 1 ? 's' : ''}…`);
+    showToast(`Refreshing ${linked.length} card${linked.length > 1 ? 's' : ''}…`);
     let ok = 0;
     let fail = 0;
     const updates = [...cards];
 
-    for (const c of enCards) {
+    for (const c of linked) {
       try {
-        const data = await fetchCard(c.apiId);
+        const data = await fetchCard(c.apiId, { lang: c.lang });
         const price = extractPrice(data);
         const idx = updates.findIndex((x) => x.id === c.id);
         if (price && idx !== -1) {

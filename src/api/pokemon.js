@@ -1,26 +1,53 @@
 /**
  * Pokémon TCG data & Cardmarket EUR pricing via TCGdex API.
- * Market prices on TCGdex are refreshed about once every 24 hours.
- * @see https://tcgdex.dev/markets-prices
+ * @see https://tcgdex.dev/
  */
-const API_BASE = 'https://api.tcgdex.net/v2/en';
+const API_ROOT = 'https://api.tcgdex.net/v2';
+
+/** App language code → TCGdex REST locale */
+export const LANG_TO_LOCALE = {
+  EN: 'en',
+  JP: 'ja',
+  CN: 'zh-tw',
+  KR: 'ko',
+  ES: 'es',
+};
+
+export function getLocaleForLang(lang) {
+  return LANG_TO_LOCALE[lang] || 'en';
+}
+
+function apiBase(lang) {
+  return `${API_ROOT}/${getLocaleForLang(lang)}`;
+}
 
 /** @param {string} base e.g. https://assets.tcgdex.net/en/swsh/swsh3/136 */
 export function getCardImageUrl(base, quality = 'low', ext = 'webp') {
   if (!base) return null;
   const trimmed = String(base).replace(/\/$/, '');
-  // Only skip suffix when URL already ends with an image extension (not tcgdx.net dots)
   if (/\.(webp|png|jpe?g|gif|avif)(\?.*)?$/i.test(trimmed)) {
     return trimmed;
   }
   return `${trimmed}/${quality}.${ext}`;
 }
 
-/** Cardmarket EUR — trend / 7d / 30d avg per TCGdex docs */
+function cardmarketFrom(obj) {
+  const cm = obj?.cardmarket;
+  if (!cm || typeof cm !== 'object') return null;
+  const trend = cm.trend ?? cm.avg7 ?? cm.avg30 ?? cm.avg ?? cm.low;
+  return trend != null ? trend : null;
+}
+
+/** Cardmarket EUR — trend / 7d / 30d avg; also checks variant-level pricing */
 export function extractPrice(card) {
-  const cm = card?.pricing?.cardmarket;
-  if (!cm) return null;
-  return cm.trend ?? cm.avg7 ?? cm.avg30 ?? cm.avg ?? cm.low ?? null;
+  if (!card) return null;
+  const top = cardmarketFrom(card.pricing);
+  if (top != null) return top;
+  for (const v of card.variants_detailed || []) {
+    const p = cardmarketFrom(v.pricing);
+    if (p != null) return p;
+  }
+  return null;
 }
 
 export function formatCardNumber(card) {
@@ -44,19 +71,29 @@ export function normalizeCard(card) {
   };
 }
 
-export async function searchCards(query, signal) {
+export async function searchCards(query, options = {}) {
+  const { lang = 'EN', signal } = options;
   const params = new URLSearchParams({
     name: query.trim(),
     'pagination:itemsPerPage': '12',
   });
-  const res = await fetch(`${API_BASE}/cards?${params}`, { signal });
+  const res = await fetch(`${apiBase(lang)}/cards?${params}`, { signal });
   if (!res.ok) throw new Error(`API ${res.status}`);
   const json = await res.json();
   return Array.isArray(json) ? json : [];
 }
 
-export async function fetchCard(apiId, signal) {
-  const res = await fetch(`${API_BASE}/cards/${encodeURIComponent(apiId)}`, { signal });
+export async function fetchCard(apiId, options = {}) {
+  const { lang = 'EN', signal } = options;
+  const res = await fetch(
+    `${apiBase(lang)}/cards/${encodeURIComponent(apiId)}`,
+    { signal },
+  );
   if (!res.ok) throw new Error('Lookup failed');
   return res.json();
+}
+
+/** Whether TCGdex typically returns Cardmarket EUR for this language */
+export function langHasAutoPricing(lang) {
+  return lang === 'EN' || lang === 'ES';
 }

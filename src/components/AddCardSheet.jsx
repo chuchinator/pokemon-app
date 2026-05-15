@@ -3,19 +3,20 @@ import {
   fetchCard,
   formatCardNumber,
   getCardImageUrl,
+  langHasAutoPricing,
   normalizeCard,
   searchCards,
 } from '../api/pokemon';
-import { CONDITIONS } from '../constants';
+import { CONDITIONS, LANG_SEARCH_HINTS } from '../constants';
 import { fmt } from '../utils/format';
 import { resizeImage } from '../utils/image';
 
 const LANG_OPTIONS = [
-  { value: 'EN', label: 'EN', sub: 'Auto-price' },
-  { value: 'JP', label: 'JP', sub: '' },
-  { value: 'CN', label: 'CN', sub: '' },
-  { value: 'KR', label: 'KR', sub: '' },
-  { value: 'ES', label: 'ES', sub: '' },
+  { value: 'EN', label: 'EN' },
+  { value: 'JP', label: 'JP' },
+  { value: 'CN', label: 'CN' },
+  { value: 'KR', label: 'KR' },
+  { value: 'ES', label: 'ES' },
 ];
 
 const emptyForm = () => ({
@@ -76,7 +77,7 @@ export default function AddCardSheet({
   }, [open, editingCard]);
 
   const previewSrc = photo || getCardImageUrl(form.imageSmall) || null;
-  const isLive = form.lang === 'EN' && form.apiId;
+  const isLive = Boolean(form.apiId);
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
   const hideAc = () => setAcState((s) => ({ ...s, show: false }));
 
@@ -86,7 +87,7 @@ export default function AddCardSheet({
       suppressAcRef.current = false;
       return;
     }
-    if (form.lang !== 'EN' || value.trim().length < 2) {
+    if (value.trim().length < 2) {
       hideAc();
       return;
     }
@@ -96,7 +97,10 @@ export default function AddCardSheet({
       if (acAbortRef.current) acAbortRef.current.abort();
       acAbortRef.current = new AbortController();
       try {
-        const results = await searchCards(value.trim(), acAbortRef.current.signal);
+        const results = await searchCards(value.trim(), {
+          lang: form.lang,
+          signal: acAbortRef.current.signal,
+        });
         setAcState({ show: true, loading: false, results, error: null });
       } catch (e) {
         if (e.name === 'AbortError') return;
@@ -113,7 +117,7 @@ export default function AddCardSheet({
   const selectAcItem = async (apiId) => {
     hideAc();
     try {
-      const raw = await fetchCard(apiId);
+      const raw = await fetchCard(apiId, { lang: form.lang });
       const card = normalizeCard(raw);
       suppressAcRef.current = true;
       setForm((f) => ({
@@ -127,7 +131,18 @@ export default function AddCardSheet({
         imageSmall: card.image || '',
         imageLarge: card.imageLarge || card.image || '',
       }));
-      toast('Price loaded (TCGdex updates daily)', 'success');
+      if (card.price != null) {
+        toast('Price loaded (TCGdex updates daily)', 'success');
+      } else if (card.image) {
+        toast(
+          langHasAutoPricing(form.lang)
+            ? 'Card loaded — no market price on file'
+            : 'Card loaded — enter value manually',
+          'success',
+        );
+      } else {
+        toast('Card details loaded', 'success');
+      }
     } catch {
       toast('Could not load card details', 'error');
     }
@@ -247,11 +262,7 @@ export default function AddCardSheet({
                 </button>
               ))}
             </div>
-            <p className="add-hint">
-              {form.lang === 'EN'
-                ? 'English cards — TCGdex Cardmarket EUR (updates every ~24h)'
-                : 'Enter details manually for this language'}
-            </p>
+            <p className="add-hint">{LANG_SEARCH_HINTS[form.lang] || LANG_SEARCH_HINTS.EN}</p>
           </div>
 
           {/* Search */}
@@ -264,7 +275,7 @@ export default function AddCardSheet({
                 id="f-name"
                 type="text"
                 className="add-search-input"
-                placeholder={form.lang === 'EN' ? 'Search card… e.g. Charizard' : 'Card name'}
+                placeholder="Search card… e.g. Charizard"
                 autoComplete="off"
                 value={form.name}
                 onChange={(e) => handleNameChange(e.target.value)}

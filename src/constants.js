@@ -3,7 +3,16 @@ export const SESSION_KEY = 'pokefolio_session';
 export const HINT_DISMISSED_KEY = 'pokefolio_hint_dismissed';
 
 /** TCGdex / Cardmarket EUR prices refresh on their side about once per day. */
-export const PRICE_API_NOTE = 'EN prices from Cardmarket (TCGdex) · updates every ~24h';
+export const PRICE_API_NOTE =
+  'EN & ES: Cardmarket EUR via TCGdex · JP/CN/KR: images & names · prices when available · ~24h';
+
+export const LANG_SEARCH_HINTS = {
+  EN: 'English — search, images & Cardmarket EUR (updates ~24h)',
+  JP: 'Japanese — search & images; market prices usually unavailable',
+  CN: 'Chinese (Traditional catalog) — search & images; limited coverage',
+  KR: 'Korean — search & images; catalog still small on TCGdex',
+  ES: 'Spanish — search, images & Cardmarket EUR when listed',
+};
 
 export const LANGS = ['ALL', 'EN', 'JP', 'CN', 'KR', 'ES'];
 export const FILTER_LANGS = ['EN', 'JP', 'CN', 'KR', 'ES'];

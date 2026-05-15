@@ -19,14 +19,14 @@ export default function CardItem({
   const delta = val - cost;
   const deltaPct = cost > 0 ? (delta / cost) * 100 : 0;
   const meta = [card.set, card.number, card.condition].filter(Boolean).join(' · ');
-  const isLive = card.lang === 'EN' && card.apiId;
+  const isLive = Boolean(card.apiId);
   const imgSrc = card.photo || getCardImageUrl(card.imageSmall) || '';
 
   const handleRefresh = async (e) => {
     e.stopPropagation();
     toast('Fetching price…');
     try {
-      const data = await fetchCard(card.apiId);
+      const data = await fetchCard(card.apiId, { lang: card.lang });
       const price = extractPrice(data);
       if (price) {
         onRefreshPrice(card.id, price);
