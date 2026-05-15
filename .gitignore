@@ -5,3 +5,6 @@ dist
 .env
 .env.local
 *.local
+server/data/cards.json
+server/.env
+server/.tunnel-url

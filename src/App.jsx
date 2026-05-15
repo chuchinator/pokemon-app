@@ -226,6 +226,9 @@ export default function App() {
       else if (action === 'export') exportJson();
       else if (action === 'importFile' && file) importJson(file);
       else if (action === 'storage') showStorageUsage(cards);
+      else if (action === 'syncInfo') {
+        showToast('Cloud sync is on — edits save to your home server', 'success');
+      }
     },
     [refreshAllPrices, copyNonEnglish, exportJson, importJson, cards],
   );
@@ -246,21 +249,23 @@ export default function App() {
         <Header onMenuOpen={() => setMenuOpen(true)} />
         <InstallHint visible={installHint} onDismiss={dismissHint} />
         <WalletHero cards={cards} />
-        <Filters cards={cards} filterLang={filterLang} onFilterChange={handleFilterChange} />
-        <CardList
-          cards={cards}
-          allCards={cards}
-          filterLang={filterLang}
-          expandedId={expandedId}
-          onToggle={handleToggle}
-          onInc={handleInc}
-          onDec={handleDec}
-          onEdit={openSheet}
-          onDelete={handleDelete}
-          onViewPhoto={handleViewPhoto}
-          onRefreshPrice={handleRefreshPrice}
-          toast={showToast}
-        />
+        <div className="holdings-panel">
+          <Filters cards={cards} filterLang={filterLang} onFilterChange={handleFilterChange} />
+          <CardList
+            cards={cards}
+            allCards={cards}
+            filterLang={filterLang}
+            expandedId={expandedId}
+            onToggle={handleToggle}
+            onInc={handleInc}
+            onDec={handleDec}
+            onEdit={openSheet}
+            onDelete={handleDelete}
+            onViewPhoto={handleViewPhoto}
+            onRefreshPrice={handleRefreshPrice}
+            toast={showToast}
+          />
+        </div>
       </div>
 
       <button
@@ -269,7 +274,7 @@ export default function App() {
         aria-label="Add card"
         onClick={() => openSheet(null)}
       >
-        +
+        + Add asset
       </button>
 
       <Toast toast={toast} />

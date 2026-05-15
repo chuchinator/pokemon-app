@@ -16,44 +16,36 @@ export function computePortfolio(cards) {
   }
 
   const pnl = totalValue - totalCost;
-  const pnlPct = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
 
-  return { counts, totalValue, totalCost, totalCards, pnl, pnlPct };
+  return { counts, totalValue, totalCost, totalCards, pnl };
 }
 
 export default function WalletHero({ cards }) {
-  const { totalValue, totalCost, totalCards, pnl, pnlPct } = computePortfolio(cards);
+  const { totalValue, totalCost, totalCards, pnl } = computePortfolio(cards);
 
-  let changeClass = 'flat';
-  let changeText = '—';
-  if (pnl > 0) {
-    changeClass = 'up';
-    changeText =
-      '↑ +' +
-      fmt(pnl) +
-      (totalCost > 0 ? ` (${pnlPct.toFixed(1)}%)` : '');
-  } else if (pnl < 0) {
-    changeClass = 'down';
-    changeText =
-      '↓ ' + fmt(pnl) + (totalCost > 0 ? ` (${pnlPct.toFixed(1)}%)` : '');
-  } else if (totalCards > 0) {
-    changeText = 'No change';
-  }
-
-  const sub =
-    totalCards +
-    ' card' +
-    (totalCards !== 1 ? 's' : '') +
-    ' · ' +
-    fmt(totalCost) +
-    ' cost basis';
+  const pnlStatClass = pnl > 0 ? 'up' : pnl < 0 ? 'down' : '';
 
   return (
     <div className="wallet-hero">
-      <div className="hero-label">Portfolio value</div>
+      <div className="hero-label">Total balance</div>
       <div className="hero-balance">{fmt(totalValue)}</div>
-      <div className={`hero-change ${changeClass}`}>{changeText}</div>
-      <span className="hero-sub">{sub}</span>
+      {totalCards > 0 && (
+        <span className="hero-assets">
+          {totalCards} asset{totalCards !== 1 ? 's' : ''}
+        </span>
+      )}
+      <div className="hero-stats">
+        <div className="hero-stat">
+          <div className="hero-stat-label">Cost basis</div>
+          <div className="hero-stat-value">{fmt(totalCost)}</div>
+        </div>
+        <div className="hero-stat">
+          <div className="hero-stat-label">Unrealized P&amp;L</div>
+          <div className={`hero-stat-value ${pnlStatClass}`}>
+            {(pnl >= 0 ? '+' : '') + fmt(pnl)}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

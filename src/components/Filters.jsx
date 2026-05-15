@@ -6,7 +6,10 @@ export default function Filters({ cards, filterLang, onFilterChange }) {
 
   return (
     <>
-      <div className="section-hdr">Your cards</div>
+      <div className="holdings-header">
+        <h2 className="section-hdr">Holdings</h2>
+        <span className="holdings-count">{counts.ALL} assets</span>
+      </div>
       <div className="filters">
         {LANGS.map((lang) => (
           <button
@@ -15,7 +18,7 @@ export default function Filters({ cards, filterLang, onFilterChange }) {
             className={`chip ${filterLang === lang ? 'active' : ''}`}
             onClick={() => onFilterChange(lang)}
           >
-            {lang === 'ALL' ? 'All' : lang}{' '}
+            {lang === 'ALL' ? 'All' : lang}
             <span className="chip-count">{counts[lang]}</span>
           </button>
         ))}

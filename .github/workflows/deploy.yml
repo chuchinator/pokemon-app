@@ -22,9 +22,11 @@ jobs:
       - run: npm ci
 
       - name: Build
-        run: npm run build
         env:
-          VITE_RAPIDAPI_KEY: ${{ secrets.VITE_RAPIDAPI_KEY }}
+          # Repo → Settings → Secrets → Actions (same token as POKEFOLIO_TOKEN on your PC)
+          VITE_SYNC_URL: ${{ secrets.VITE_SYNC_URL }}
+          VITE_SYNC_TOKEN: ${{ secrets.VITE_SYNC_TOKEN }}
+        run: npm run build
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4

@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "node server/index.mjs",
+    "sync:server": "bash scripts/run-home-server.sh",
+    "sync:tunnel": "bash scripts/start-sync-stack.sh",
+    "start": "npm run build && STATIC_DIR=dist node server/index.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",

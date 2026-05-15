@@ -1,12 +1,13 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
+import { getSyncInfo, isSyncEnabled } from '../api/sync';
 import { STORAGE_KEY } from '../constants';
 
-const MENU_ITEMS = [
+const BASE_MENU_ITEMS = [
   {
     action: 'refresh',
     icon: '↻',
     title: 'Refresh English prices',
-    sub: 'Auto-update all EN cards from Cardmarket',
+    sub: 'Refresh EN prices from TCGdex / Cardmarket',
   },
   {
     action: 'copyOther',
@@ -37,6 +38,20 @@ const MENU_ITEMS = [
 export default function MenuSheet({ open, onClose, onAction }) {
   const importRef = useRef(null);
 
+  const menuItems = useMemo(() => {
+    const items = [...BASE_MENU_ITEMS];
+    const sync = getSyncInfo();
+    if (isSyncEnabled() && sync) {
+      items.unshift({
+        action: 'syncInfo',
+        icon: '☁',
+        title: 'Cloud sync',
+        sub: `Collection stored on ${sync.label}`,
+      });
+    }
+    return items;
+  }, []);
+
   const handleClick = (action) => {
     if (action === 'import') {
       importRef.current?.click();
@@ -56,7 +71,7 @@ export default function MenuSheet({ open, onClose, onAction }) {
       <div className={`menu-sheet ${open ? 'open' : ''}`}>
         <div className="sheet-handle" />
         <div className="sheet-title">Tools</div>
-        {MENU_ITEMS.map((item) => (
+        {menuItems.map((item) => (
           <div
             key={item.action}
             className="menu-item"

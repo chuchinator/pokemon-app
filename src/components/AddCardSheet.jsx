@@ -1,8 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { extractPrice, fetchCard, searchCards } from '../api/pokemon';
+import {
+  fetchCard,
+  formatCardNumber,
+  getCardImageUrl,
+  normalizeCard,
+  searchCards,
+} from '../api/pokemon';
 import { CONDITIONS } from '../constants';
 import { fmt } from '../utils/format';
 import { resizeImage } from '../utils/image';
+
+const LANG_OPTIONS = [
+  { value: 'EN', label: 'EN', sub: 'Auto-price' },
+  { value: 'JP', label: 'JP', sub: '' },
+  { value: 'CN', label: 'CN', sub: '' },
+  { value: 'KR', label: 'KR', sub: '' },
+  { value: 'ES', label: 'ES', sub: '' },
+];
 
 const emptyForm = () => ({
   name: '',
@@ -62,19 +76,8 @@ export default function AddCardSheet({
   }, [open, editingCard]);
 
   const previewSrc = photo || form.imageSmall || null;
-  const langHint =
-    form.lang === 'EN'
-      ? {
-          text: 'Type a card name — autocomplete suggests cards with Cardmarket EUR prices.',
-          color: 'rgba(74,222,128,0.6)',
-        }
-      : {
-          text: 'Enter details manually. Take a photo of the card for your records.',
-          color: 'rgba(232,232,240,0.4)',
-        };
-
+  const isLive = form.lang === 'EN' && form.apiId;
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
-
   const hideAc = () => setAcState((s) => ({ ...s, show: false }));
 
   const handleNameChange = (value) => {
@@ -110,21 +113,21 @@ export default function AddCardSheet({
   const selectAcItem = async (apiId) => {
     hideAc();
     try {
-      const card = await fetchCard(apiId);
-      const price = extractPrice(card);
+      const raw = await fetchCard(apiId);
+      const card = normalizeCard(raw);
       suppressAcRef.current = true;
       setForm((f) => ({
         ...f,
-        name: card.name || '',
-        set: card.episode?.name || '',
-        number: card.card_code_number || '',
+        name: card.name,
+        set: card.set,
+        number: card.number,
         currentValue:
-          f.currentValue || (price != null ? price.toFixed(2) : ''),
+          f.currentValue || (card.price != null ? card.price.toFixed(2) : ''),
         apiId: card.id,
         imageSmall: card.image || '',
-        imageLarge: card.image || '',
+        imageLarge: card.imageLarge || '',
       }));
-      toast('Card found — price loaded', 'success');
+      toast('Cardmarket price loaded (TCGdex)', 'success');
     } catch {
       toast('Could not load card details', 'error');
     }
@@ -170,10 +173,6 @@ export default function AddCardSheet({
     onSave(data, editingCard?.id);
   };
 
-  if (!open && !editingCard) {
-    /* keep mounted for transitions — controlled by open class */
-  }
-
   return (
     <>
       <div
@@ -181,235 +180,246 @@ export default function AddCardSheet({
         onClick={onClose}
         role="presentation"
       />
-      <div className={`sheet ${open ? 'open' : ''}`}>
-        <div className="sheet-handle" />
-        <div className="sheet-title">{editingCard ? 'Edit card' : 'Add card'}</div>
 
-        <div className="photo-section">
-          <div
-            className="photo-preview"
-            onClick={() => previewSrc && onPhotoPreview?.(previewSrc)}
-            role="presentation"
-          >
-            {previewSrc ? (
-              <img src={previewSrc} alt="" />
-            ) : (
-              <span className="photo-preview-icon">▢</span>
-            )}
+      <div className={`sheet add-sheet ${open ? 'open' : ''}`}>
+        <div className="add-sheet-header">
+          <button type="button" className="add-close" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+          <div className="add-sheet-titles">
+            <h2 className="add-sheet-title">{editingCard ? 'Edit asset' : 'Add asset'}</h2>
+            <p className="add-sheet-sub">
+              {editingCard ? 'Update this holding' : 'Add a card to your portfolio'}
+            </p>
           </div>
-          <div className="photo-actions">
+          <div className="add-header-spacer" />
+        </div>
+
+        <div className="add-sheet-body">
+          {/* Token preview */}
+          <div className="add-token-preview">
             <button
               type="button"
-              className="photo-btn"
-              onClick={() => cameraRef.current?.click()}
+              className={`add-token-ring ${previewSrc ? 'has-image' : ''}`}
+              onClick={() => previewSrc && onPhotoPreview?.(previewSrc)}
+              aria-label="Preview image"
             >
-              📷 Take photo
+              {previewSrc ? (
+                <img src={previewSrc} alt="" />
+              ) : (
+                <span className="add-token-placeholder">?</span>
+              )}
+              {isLive && <span className="add-live-badge">LIVE</span>}
             </button>
-            <button
-              type="button"
-              className="photo-btn"
-              onClick={() => libraryRef.current?.click()}
-            >
-              🖼 Choose from library
-            </button>
-            {photo && (
-              <button
-                type="button"
-                className="photo-btn danger"
-                onClick={() => setPhoto(null)}
-              >
-                ✕ Remove photo
+            <div className="add-media-btns">
+              <button type="button" className="add-media-btn" onClick={() => cameraRef.current?.click()}>
+                <span className="add-media-icon">📷</span>
+                Camera
               </button>
+              <button type="button" className="add-media-btn" onClick={() => libraryRef.current?.click()}>
+                <span className="add-media-icon">🖼</span>
+                Gallery
+              </button>
+              {previewSrc && (
+                <button type="button" className="add-media-btn danger" onClick={() => setPhoto(null)}>
+                  <span className="add-media-icon">✕</span>
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Language */}
+          <div className="add-section">
+            <div className="add-section-label">Network</div>
+            <div className="add-lang-row">
+              {LANG_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`add-lang-pill ${form.lang === opt.value ? 'active' : ''}`}
+                  onClick={() => {
+                    setField('lang', opt.value);
+                    hideAc();
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="add-hint">
+              {form.lang === 'EN'
+                ? 'English cards — search uses TCGdex Cardmarket EUR prices'
+                : 'Enter details manually for this language'}
+            </p>
+          </div>
+
+          {/* Search */}
+          <div className="add-section">
+            <div className="add-section-label">Asset</div>
+            <div className="add-search-wrap">
+              <span className="add-search-icon">⌕</span>
+              <input
+                ref={nameInputRef}
+                id="f-name"
+                type="text"
+                className="add-search-input"
+                placeholder={form.lang === 'EN' ? 'Search card… e.g. Charizard' : 'Card name'}
+                autoComplete="off"
+                value={form.name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                onBlur={() => setTimeout(hideAc, 200)}
+              />
+            </div>
+            {acState.show && (
+              <div className="add-ac-list">
+                {acState.loading && (
+                  <div className="ac-loading">
+                    <span className="spinner" />
+                    Searching…
+                  </div>
+                )}
+                {!acState.loading && acState.error && (
+                  <div className="ac-empty">{acState.error}</div>
+                )}
+                {!acState.loading &&
+                  !acState.error &&
+                  acState.results.length === 0 && (
+                    <div className="ac-empty">No cards found</div>
+                  )}
+                {!acState.loading &&
+                  acState.results.map((card) => {
+                    const thumb = getCardImageUrl(card.image);
+                    const number = formatCardNumber(card);
+                    return (
+                      <div
+                        key={card.id}
+                        className="ac-item"
+                        onMouseDown={() => selectAcItem(card.id)}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        {thumb ? (
+                          <img className="ac-thumb" src={thumb} alt="" loading="lazy" />
+                        ) : (
+                          <div className="ac-thumb" />
+                        )}
+                        <div style={{ minWidth: 0 }}>
+                          <div className="ac-name">{card.name}</div>
+                          <div className="ac-meta">
+                            {number || card.localId || 'Tap to load price'}
+                          </div>
+                        </div>
+                        <div className="ac-price ac-price-hint">↵</div>
+                      </div>
+                    );
+                  })}
+              </div>
             )}
           </div>
-        </div>
 
-        <div className="field">
-          <label className="field-label" htmlFor="f-lang">
-            Language
-          </label>
-          <select
-            id="f-lang"
-            className="field-select"
-            value={form.lang}
-            onChange={(e) => {
-              setField('lang', e.target.value);
-              hideAc();
-            }}
-          >
-            <option value="EN">English (auto-priced)</option>
-            <option value="JP">Japanese</option>
-            <option value="CN">Chinese</option>
-            <option value="KR">Korean</option>
-            <option value="ES">Spanish</option>
-          </select>
-          <div className="field-hint" style={{ color: langHint.color }}>
-            {langHint.text}
-          </div>
-        </div>
-
-        <div className="field">
-          <label className="field-label" htmlFor="f-name">
-            Card name
-          </label>
-          <input
-            ref={nameInputRef}
-            id="f-name"
-            type="text"
-            className="field-input"
-            placeholder="Start typing... e.g. Charizard"
-            autoComplete="off"
-            value={form.name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            onBlur={() => setTimeout(hideAc, 200)}
-          />
-          {acState.show && (
-            <div className="autocomplete show">
-              {acState.loading && (
-                <div className="ac-loading">
-                  <span className="spinner" />
-                  Searching Pokémon TCG…
+          {/* Details card */}
+          <div className="add-card-group">
+            <div className="add-section-label">Details</div>
+            <div className="add-field-stack">
+              <div className="add-field">
+                <label className="add-field-label" htmlFor="f-set">Set</label>
+                <input
+                  id="f-set"
+                  type="text"
+                  className="add-input"
+                  placeholder="Surging Sparks"
+                  value={form.set}
+                  onChange={(e) => setField('set', e.target.value)}
+                />
+              </div>
+              <div className="add-field-row">
+                <div className="add-field">
+                  <label className="add-field-label" htmlFor="f-number">Number</label>
+                  <input
+                    id="f-number"
+                    type="text"
+                    className="add-input"
+                    placeholder="199/191"
+                    value={form.number}
+                    onChange={(e) => setField('number', e.target.value)}
+                  />
                 </div>
-              )}
-              {!acState.loading && acState.error && (
-                <div className="ac-empty">{acState.error}</div>
-              )}
-              {!acState.loading &&
-                !acState.error &&
-                acState.results.length === 0 && (
-                  <div className="ac-empty">No cards found</div>
-                )}
-              {!acState.loading &&
-                acState.results.map((card) => {
-                  const price = extractPrice(card);
-                  const setName = card.episode?.name || '';
-                  const number = card.card_code_number || '';
-                  return (
-                    <div
-                      key={card.id}
-                      className="ac-item"
-                      onMouseDown={() => selectAcItem(card.id)}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      {card.image ? (
-                        <img className="ac-thumb" src={card.image} alt="" loading="lazy" />
-                      ) : (
-                        <div className="ac-thumb" />
-                      )}
-                      <div style={{ minWidth: 0 }}>
-                        <div className="ac-name">{card.name}</div>
-                        <div className="ac-meta">
-                          {setName} {number} · {card.rarity || ''}
-                        </div>
-                      </div>
-                      <div className="ac-price">{price ? fmt(price) : '—'}</div>
-                    </div>
-                  );
-                })}
+                <div className="add-field">
+                  <label className="add-field-label" htmlFor="f-cond">Condition</label>
+                  <select
+                    id="f-cond"
+                    className="add-input add-select"
+                    value={form.condition}
+                    onChange={(e) => setField('condition', e.target.value)}
+                  >
+                    {CONDITIONS.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
 
-        <div className="field">
-          <label className="field-label" htmlFor="f-set">
-            Set
-          </label>
-          <input
-            id="f-set"
-            type="text"
-            className="field-input"
-            placeholder="Surging Sparks"
-            value={form.set}
-            onChange={(e) => setField('set', e.target.value)}
-          />
-        </div>
-
-        <div className="field-row">
-          <div className="field">
-            <label className="field-label" htmlFor="f-number">
-              Number
-            </label>
-            <input
-              id="f-number"
-              type="text"
-              className="field-input"
-              placeholder="199/191"
-              value={form.number}
-              onChange={(e) => setField('number', e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label className="field-label" htmlFor="f-cond">
-              Condition
-            </label>
-            <select
-              id="f-cond"
-              className="field-select"
-              value={form.condition}
-              onChange={(e) => setField('condition', e.target.value)}
-            >
-              {CONDITIONS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="field-row-3">
-          <div className="field">
-            <label className="field-label" htmlFor="f-qty">
-              Qty
-            </label>
-            <input
-              id="f-qty"
-              type="number"
-              inputMode="numeric"
-              className="field-input"
-              min={1}
-              value={form.qty}
-              onChange={(e) => setField('qty', e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label className="field-label" htmlFor="f-price">
-              Paid (€)
-            </label>
-            <input
-              id="f-price"
-              type="number"
-              inputMode="decimal"
-              className="field-input"
-              placeholder="0.00"
-              min={0}
-              step="0.01"
-              value={form.purchasePrice}
-              onChange={(e) => setField('purchasePrice', e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label className="field-label" htmlFor="f-value">
-              Value (€)
-            </label>
-            <input
-              id="f-value"
-              type="number"
-              inputMode="decimal"
-              className="field-input"
-              placeholder="0.00"
-              min={0}
-              step="0.01"
-              value={form.currentValue}
-              onChange={(e) => setField('currentValue', e.target.value)}
-            />
+          {/* Position / amounts */}
+          <div className="add-card-group">
+            <div className="add-section-label">Position</div>
+            <div className="add-amount-grid">
+              <div className="add-amount-cell">
+                <label className="add-field-label" htmlFor="f-qty">Amount</label>
+                <input
+                  id="f-qty"
+                  type="number"
+                  inputMode="numeric"
+                  className="add-input add-input-mono"
+                  min={1}
+                  value={form.qty}
+                  onChange={(e) => setField('qty', e.target.value)}
+                />
+              </div>
+              <div className="add-amount-cell">
+                <label className="add-field-label" htmlFor="f-price">Cost (€)</label>
+                <input
+                  id="f-price"
+                  type="number"
+                  inputMode="decimal"
+                  className="add-input add-input-mono"
+                  placeholder="0.00"
+                  min={0}
+                  step="0.01"
+                  value={form.purchasePrice}
+                  onChange={(e) => setField('purchasePrice', e.target.value)}
+                />
+              </div>
+              <div className="add-amount-cell add-amount-highlight">
+                <label className="add-field-label" htmlFor="f-value">Value (€)</label>
+                <input
+                  id="f-value"
+                  type="number"
+                  inputMode="decimal"
+                  className="add-input add-input-mono add-input-value"
+                  placeholder="0.00"
+                  min={0}
+                  step="0.01"
+                  value={form.currentValue}
+                  onChange={(e) => setField('currentValue', e.target.value)}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        <button type="button" className="submit-btn" onClick={handleSubmit}>
-          {editingCard ? 'Save changes' : 'Add to portfolio'}
-        </button>
+        <div className="add-sheet-footer">
+          <button type="button" className="add-btn-secondary" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="button" className="add-btn-primary" onClick={handleSubmit}>
+            {editingCard ? 'Save' : 'Add asset'}
+          </button>
+        </div>
       </div>
 
       <input

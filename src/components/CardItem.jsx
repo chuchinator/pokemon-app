@@ -63,29 +63,19 @@ export default function CardItem({
           <div className={`card-thumb-placeholder lang-${card.lang}`}>{card.lang}</div>
         </div>
       )}
-      <div style={{ minWidth: 0 }}>
+      <div className="card-body">
         <div className="card-name">{card.name}</div>
         <div className="card-meta">
-          <span className={`lang-pill lang-${card.lang}`} style={{ color: '#fff' }}>
-            {card.lang}
-          </span>
           {isLive && <span className="live-dot" />}
-          {meta || '—'}
+          {card.lang}
+          {meta ? ` · ${meta}` : ''}
+          {q > 1 ? ` · ×${q}` : ''}
         </div>
       </div>
       <div className="card-value-col">
         <div className="card-value">{fmt(val)}</div>
-        <div className="card-qty">
-          ×{q}
-          {delta !== 0 && cost > 0 && (
-            <>
-              {' · '}
-              <span className={delta > 0 ? 'card-delta-up' : 'card-delta-down'}>
-                {delta > 0 ? '+' : ''}
-                {deltaPct.toFixed(0)}%
-              </span>
-            </>
-          )}
+        <div className={`card-pnl ${delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'}`}>
+          {cost > 0 ? `${delta >= 0 ? '+' : ''}${deltaPct.toFixed(2)}%` : '—'}
         </div>
       </div>
       {expanded && (
