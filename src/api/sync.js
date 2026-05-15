@@ -1,14 +1,18 @@
-const SYNC_URL = (import.meta.env.VITE_SYNC_URL || '').replace(/\/$/, '');
-const SYNC_TOKEN = import.meta.env.VITE_SYNC_TOKEN || '';
+import { getSessionToken, hasSyncServer } from './auth';
 
-/** Enabled when VITE_SYNC_TOKEN is set. Empty VITE_SYNC_URL = same host (/api). */
+const SYNC_URL = (import.meta.env.VITE_SYNC_URL || '').replace(/\/$/, '');
+
+/** Cloud server URL is set (login required for sync). */
 export function isSyncEnabled() {
-  return Boolean(SYNC_TOKEN);
+  return hasSyncServer() && Boolean(getSessionToken());
 }
 
-/** Shown in menu when sync is baked into the GitHub Pages build. */
+export function isSyncConfigured() {
+  return hasSyncServer();
+}
+
 export function getSyncInfo() {
-  if (!isSyncEnabled()) return null;
+  if (!hasSyncServer()) return null;
   if (!SYNC_URL) return { label: 'your server', url: '' };
   try {
     return { label: new URL(SYNC_URL).host, url: SYNC_URL };
@@ -22,9 +26,11 @@ function apiPath(path) {
 }
 
 function authHeaders() {
+  const token = getSessionToken();
+  if (!token) throw new Error('Not logged in');
   return {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${SYNC_TOKEN}`,
+    Authorization: `Bearer ${token}`,
   };
 }
 
@@ -40,13 +46,12 @@ export async function loadCardsFromServer() {
   return Array.isArray(data) ? data : [];
 }
 
-/** Ping server + verify auth (for connection indicator). */
 export async function checkSyncConnection() {
   const health = await fetch(apiPath('/api/health'), { method: 'GET' });
   if (!health.ok) throw new Error('Server not reachable');
 
-  const res = await fetch(apiPath('/api/cards'), { headers: authHeaders() });
-  if (res.status === 401) throw new Error('Invalid sync token');
+  const res = await fetch(apiPath('/api/auth/me'), { headers: authHeaders() });
+  if (res.status === 401) throw new Error('Session expired — sign in again');
   if (!res.ok) throw new Error(`Server error (${res.status})`);
   return true;
 }

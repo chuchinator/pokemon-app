@@ -1,4 +1,5 @@
 export const STORAGE_KEY = 'pokefolio_cards_v1';
+export const SESSION_KEY = 'pokefolio_session';
 export const HINT_DISMISSED_KEY = 'pokefolio_hint_dismissed';
 
 export const LANGS = ['ALL', 'EN', 'JP', 'CN', 'KR', 'ES'];

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { extractPrice, fetchCard } from './api/pokemon';
+import AuthScreen from './components/AuthScreen';
 import AddCardSheet from './components/AddCardSheet';
 import CardList from './components/CardList';
 import Filters from './components/Filters';
@@ -12,6 +13,7 @@ import Lightbox from './components/Lightbox';
 import MenuSheet, { showStorageUsage } from './components/MenuSheet';
 import Toast from './components/Toast';
 import WalletHero from './components/WalletHero';
+import { useAuth } from './hooks/useAuth';
 import { useCards } from './hooks/useCards';
 import { useSyncStatus } from './hooks/useSyncStatus';
 import { useToast } from './hooks/useToast';
@@ -19,6 +21,22 @@ import { getSyncStatusDetail } from './components/SyncStatus';
 import './App.css';
 
 export default function App() {
+  const auth = useAuth();
+
+  if (!auth.ready) {
+    return <div className="auth-screen auth-screen--loading">Loading…</div>;
+  }
+
+  if (auth.needsAuth && !auth.isLoggedIn) {
+    return (
+      <AuthScreen onLogin={auth.login} onSignup={auth.signup} busy={auth.busy} />
+    );
+  }
+
+  return <PortfolioApp auth={auth} />;
+}
+
+function PortfolioApp({ auth }) {
   const { toast, showToast } = useToast();
   const { cards, setCards } = useCards(showToast);
   const { status: syncStatus, error: syncError, lastOk: syncLastOk, check: checkSync } =
@@ -233,6 +251,9 @@ export default function App() {
       else if (action === 'syncInfo') {
         checkSync();
         alert(getSyncStatusDetail(syncStatus, syncError, syncLastOk));
+      } else if (action === 'logout') {
+        auth.logout();
+        window.location.reload();
       }
     },
     [
@@ -245,6 +266,7 @@ export default function App() {
       syncError,
       syncLastOk,
       checkSync,
+      auth,
     ],
   );
 
@@ -267,6 +289,7 @@ export default function App() {
           syncError={syncError}
           syncLastOk={syncLastOk}
           onSyncRetry={checkSync}
+          userEmail={auth.user?.email}
         />
         <InstallHint visible={installHint} onDismiss={dismissHint} />
         <WalletHero cards={cards} />
@@ -315,6 +338,8 @@ export default function App() {
         onAction={handleMenuAction}
         syncStatus={syncStatus}
         syncError={syncError}
+        userEmail={auth.user?.email}
+        onLogout={auth.needsAuth ? auth.logout : null}
       />
 
       <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />

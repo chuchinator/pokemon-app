@@ -1,4 +1,4 @@
-import { getSyncInfo } from '../api/sync';
+import { getSyncInfo, isSyncConfigured } from '../api/sync';
 
 function formatLastOk(ts) {
   if (!ts) return '';
@@ -14,14 +14,17 @@ export default function SyncStatus({ status, error, lastOk, onRetry }) {
   const info = getSyncInfo();
 
   if (status === 'disabled') {
-    return (
-      <div
-        className="sync-status sync-status--local"
-        title="Cloud sync not configured in this build. Data stays on this device."
-      >
-        <span className="sync-status-label">Local</span>
-      </div>
-    );
+    if (!isSyncConfigured()) {
+      return (
+        <div
+          className="sync-status sync-status--local"
+          title="No cloud server — data stays on this device only."
+        >
+          <span className="sync-status-label">Local</span>
+        </div>
+      );
+    }
+    return null;
   }
 
   const label =
@@ -69,7 +72,11 @@ export function getSyncStatusDetail(status, error, lastOk) {
   if (lastOk && status === 'online') lines.push(`Last check: ${formatLastOk(lastOk)}`);
   if (error) lines.push(`Error: ${error}`);
   if (status === 'offline') {
-    lines.push('', 'Start on your Mac: npm run sync:tunnel');
+    lines.push(
+      '',
+      'On your Mac: npm run sync:tunnel',
+      'If the tunnel URL changed, update GitHub secret VITE_SYNC_URL and redeploy.',
+    );
   }
   return lines.filter((l) => l !== '').join('\n');
 }

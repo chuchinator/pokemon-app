@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { getSyncInfo, isSyncEnabled } from '../api/sync';
+import { getSyncInfo, isSyncConfigured, isSyncEnabled } from '../api/sync';
 import { STORAGE_KEY } from '../constants';
 
 const BASE_MENU_ITEMS = [
@@ -35,13 +35,29 @@ const BASE_MENU_ITEMS = [
   },
 ];
 
-export default function MenuSheet({ open, onClose, onAction, syncStatus, syncError }) {
+export default function MenuSheet({
+  open,
+  onClose,
+  onAction,
+  syncStatus,
+  syncError,
+  userEmail,
+  onLogout,
+}) {
   const importRef = useRef(null);
 
   const menuItems = useMemo(() => {
     const items = [...BASE_MENU_ITEMS];
     const sync = getSyncInfo();
-    if (isSyncEnabled() && sync) {
+    if (onLogout && userEmail) {
+      items.unshift({
+        action: 'logout',
+        icon: '⎋',
+        title: 'Sign out',
+        sub: userEmail,
+      });
+    }
+    if (isSyncConfigured() && isSyncEnabled() && sync) {
       const statusSub =
         syncStatus === 'online'
           ? `Connected to ${sync.label}`

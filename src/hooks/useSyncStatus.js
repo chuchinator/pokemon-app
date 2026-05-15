@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { checkSyncConnection, isSyncEnabled } from '../api/sync';
+import { checkSyncConnection, isSyncConfigured, isSyncEnabled } from '../api/sync';
 
 const POLL_MS = 30_000;
 
 export function useSyncStatus() {
-  const [status, setStatus] = useState(() =>
-    isSyncEnabled() ? 'checking' : 'disabled',
-  );
+  const [status, setStatus] = useState('disabled');
   const [error, setError] = useState(null);
   const [lastOk, setLastOk] = useState(null);
 
   const check = useCallback(async (silent = false) => {
-    if (!isSyncEnabled()) {
+    if (!isSyncConfigured() || !isSyncEnabled()) {
       setStatus('disabled');
       setError(null);
       return;
