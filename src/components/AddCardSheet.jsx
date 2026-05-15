@@ -75,11 +75,7 @@ export default function AddCardSheet({
     setTimeout(() => nameInputRef.current?.focus(), 300);
   }, [open, editingCard]);
 
-  const previewSrc =
-    photo ||
-    getCardImageUrl(form.imageLarge, 'high') ||
-    getCardImageUrl(form.imageSmall, 'high') ||
-    null;
+  const previewSrc = photo || getCardImageUrl(form.imageSmall) || null;
   const isLive = form.lang === 'EN' && form.apiId;
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
   const hideAc = () => setAcState((s) => ({ ...s, show: false }));
@@ -201,17 +197,17 @@ export default function AddCardSheet({
 
         <div className="add-sheet-body">
           {/* Card preview */}
-          <div className="add-card-hero">
+          <div className="add-token-preview">
             <button
               type="button"
-              className={`add-card-frame ${previewSrc ? 'has-image' : 'empty'}`}
+              className={`add-token-ring ${previewSrc ? 'has-image' : ''}`}
               onClick={() => previewSrc && onPhotoPreview?.(previewSrc)}
-              aria-label="Preview card"
+              aria-label="Preview image"
             >
               {previewSrc ? (
-                <img src={previewSrc} alt={form.name || 'Card'} />
+                <img src={previewSrc} alt="" />
               ) : (
-                <span className="add-card-placeholder">Search or add a photo</span>
+                <span className="add-token-placeholder">?</span>
               )}
               {isLive && <span className="add-live-badge">LIVE</span>}
             </button>
@@ -293,7 +289,7 @@ export default function AddCardSheet({
                   )}
                 {!acState.loading &&
                   acState.results.map((card) => {
-                    const thumb = getCardImageUrl(card.image, 'high');
+                    const thumb = getCardImageUrl(card.image);
                     const number = formatCardNumber(card);
                     return (
                       <div
