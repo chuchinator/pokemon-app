@@ -22,6 +22,20 @@ import { getSyncStatusDetail } from './components/SyncStatus';
 import './App.css';
 
 export default function App() {
+  const [configReady, setConfigReady] = useState(false);
+
+  useEffect(() => {
+    initSyncConfig().then(() => setConfigReady(true));
+  }, []);
+
+  if (!configReady) {
+    return <div className="auth-screen auth-screen--loading">Loading…</div>;
+  }
+
+  return <AppWithAuth />;
+}
+
+function AppWithAuth() {
   const auth = useAuth();
 
   if (!auth.ready) {
