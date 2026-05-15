@@ -1,6 +1,15 @@
 import { SESSION_KEY } from '../constants';
 import { getSyncUrl } from './syncConfig';
 
+function wrapNetworkError(err) {
+  if (err instanceof TypeError && (err.message || '').includes('fetch')) {
+    return new Error(
+      'Cannot reach your home server. Start npm run sync:tunnel on your Mac, then refresh.',
+    );
+  }
+  return err;
+}
+
 export function hasSyncServer() {
   return Boolean(getSyncUrl());
 }
@@ -39,11 +48,16 @@ export function setStoredUser(user) {
 }
 
 export async function signup(email, password) {
-  const res = await fetch(apiPath('/api/auth/signup'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
+  let res;
+  try {
+    res = await fetch(apiPath('/api/auth/signup'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (e) {
+    throw wrapNetworkError(e);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Signup failed');
   setSessionToken(data.token);
@@ -52,11 +66,16 @@ export async function signup(email, password) {
 }
 
 export async function login(email, password) {
-  const res = await fetch(apiPath('/api/auth/login'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
+  let res;
+  try {
+    res = await fetch(apiPath('/api/auth/login'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (e) {
+    throw wrapNetworkError(e);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Login failed');
   setSessionToken(data.token);
