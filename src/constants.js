@@ -2,6 +2,9 @@ export const STORAGE_KEY = 'pokefolio_cards_v1';
 export const SESSION_KEY = 'pokefolio_session';
 export const HINT_DISMISSED_KEY = 'pokefolio_hint_dismissed';
 
+/** TCGdex / Cardmarket EUR prices refresh on their side about once per day. */
+export const PRICE_API_NOTE = 'EN prices from Cardmarket (TCGdex) · updates every ~24h';
+
 export const LANGS = ['ALL', 'EN', 'JP', 'CN', 'KR', 'ES'];
 export const FILTER_LANGS = ['EN', 'JP', 'CN', 'KR', 'ES'];
 

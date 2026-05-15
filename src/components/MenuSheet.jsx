@@ -7,7 +7,7 @@ const BASE_MENU_ITEMS = [
     action: 'refresh',
     icon: '↻',
     title: 'Refresh English prices',
-    sub: 'Refresh EN prices from TCGdex / Cardmarket',
+    sub: 'Fetches latest from TCGdex (source updates ~every 24h)',
   },
   {
     action: 'copyOther',

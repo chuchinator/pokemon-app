@@ -346,6 +346,19 @@ header {
   font-size: 11px;
 }
 
+.price-api-note {
+  margin: 0;
+  padding: 0 16px 12px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.detail-price-note {
+  padding: 0;
+  margin: -4px 0 4px;
+}
+
 /* ── Holdings list ── */
 .cards { padding: 0; }
 

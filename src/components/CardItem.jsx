@@ -30,7 +30,7 @@ export default function CardItem({
       const price = extractPrice(data);
       if (price) {
         onRefreshPrice(card.id, price);
-        toast(`Updated to ${fmt(price)}`, 'success');
+        toast(`Updated to ${fmt(price)} (TCGdex daily)`, 'success');
       } else {
         toast('No price available', 'error');
       }
@@ -102,11 +102,16 @@ export default function CardItem({
           </div>
           {card.lastPriceUpdate && (
             <div className="detail-row">
-              <span className="detail-label">Price updated</span>
+              <span className="detail-label">Last fetched</span>
               <span className="detail-value">
                 {new Date(card.lastPriceUpdate).toLocaleDateString('es-ES')}
               </span>
             </div>
+          )}
+          {isLive && (
+            <p className="price-api-note detail-price-note">
+              Market data refreshes on TCGdex about every 24 hours.
+            </p>
           )}
           <div className="detail-row">
             <span className="detail-label">Position P&amp;L</span>

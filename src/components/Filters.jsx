@@ -1,4 +1,4 @@
-import { LANGS } from '../constants';
+import { LANGS, PRICE_API_NOTE } from '../constants';
 import { computePortfolio } from './WalletHero';
 
 export default function Filters({ cards, filterLang, onFilterChange }) {
@@ -23,6 +23,7 @@ export default function Filters({ cards, filterLang, onFilterChange }) {
           </button>
         ))}
       </div>
+      <p className="price-api-note">{PRICE_API_NOTE}</p>
     </>
   );
 }

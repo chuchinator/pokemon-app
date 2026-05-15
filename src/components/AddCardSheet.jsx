@@ -127,7 +127,7 @@ export default function AddCardSheet({
         imageSmall: card.image || '',
         imageLarge: card.imageLarge || card.image || '',
       }));
-      toast('Cardmarket price loaded (TCGdex)', 'success');
+      toast('Price loaded (TCGdex updates daily)', 'success');
     } catch {
       toast('Could not load card details', 'error');
     }
@@ -249,7 +249,7 @@ export default function AddCardSheet({
             </div>
             <p className="add-hint">
               {form.lang === 'EN'
-                ? 'English cards — search uses TCGdex Cardmarket EUR prices'
+                ? 'English cards — TCGdex Cardmarket EUR (updates every ~24h)'
                 : 'Enter details manually for this language'}
             </p>
           </div>

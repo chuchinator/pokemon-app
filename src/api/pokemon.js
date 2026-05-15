@@ -1,5 +1,6 @@
 /**
- * Pokémon TCG data & Cardmarket EUR pricing via TCGdex API
+ * Pokémon TCG data & Cardmarket EUR pricing via TCGdex API.
+ * Market prices on TCGdex are refreshed about once every 24 hours.
  * @see https://tcgdex.dev/markets-prices
  */
 const API_BASE = 'https://api.tcgdex.net/v2/en';

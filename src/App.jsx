@@ -187,7 +187,7 @@ function PortfolioApp({ auth }) {
 
     setCards(updates);
     showToast(
-      `Updated ${ok}${fail ? `, ${fail} failed` : ''}`,
+      `Updated ${ok}${fail ? `, ${fail} failed` : ''} (TCGdex updates daily)`,
       ok > 0 ? 'success' : 'error',
     );
   }, [cards, setCards, showToast]);
