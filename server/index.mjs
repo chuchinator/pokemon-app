@@ -22,20 +22,20 @@ function allowedOrigins() {
 }
 
 function corsHeaders(origin) {
+  const methods = 'GET, PUT, POST, OPTIONS';
+  const headers = {
+    'Access-Control-Allow-Methods': methods,
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    Vary: 'Origin',
+  };
   if (CORS_ORIGIN === '*') {
-    return {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    };
+    headers['Access-Control-Allow-Origin'] = '*';
+    return headers;
   }
   const list = allowedOrigins();
-  const match = origin && list.includes(origin) ? origin : null;
-  const headers = {
-    'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  };
-  if (match) headers['Access-Control-Allow-Origin'] = match;
+  if (origin && list.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+  }
   return headers;
 }
 
