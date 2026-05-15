@@ -346,49 +346,134 @@ header {
   font-size: 11px;
 }
 
-/* ── Token rows (holdings) ── */
-.cards { padding: 0; }
+/* ── Card grid (holdings) ── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px;
+}
 
-.card-item {
+.card-tile {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--glass-border);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.card-tile.expanded {
+  grid-column: 1 / -1;
+  border-color: rgba(139, 92, 246, 0.35);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.card-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  padding: 10px 10px 6px;
+  margin: 0;
+  border: none;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(0, 0, 0, 0.25) 100%
+  );
+  cursor: zoom-in;
+  font-family: inherit;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-  transition: background 0.15s;
-  position: relative;
+  justify-content: center;
 }
 
-.card-item:last-child { border-bottom: none; }
-.card-item:active { background: rgba(255, 255, 255, 0.03); }
-.card-item.expanded { flex-wrap: wrap; background: rgba(255, 255, 255, 0.02); }
-
-.card-thumb-wrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.06);
-  flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.card-thumb {
-  width: 100%;
+.card-art-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+  border-radius: 6px;
+  transition: transform 0.2s;
 }
 
-.card-thumb-placeholder {
-  width: 100%;
-  height: 100%;
+.card-art:active .card-art-img {
+  transform: scale(0.98);
+}
+
+.card-art-placeholder {
+  width: 72%;
+  aspect-ratio: 5 / 7;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 14px;
   color: #fff;
+  opacity: 0.9;
+}
+
+.card-qty-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--mono);
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.card-live-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--green);
+  color: #000;
+}
+
+.card-tile-info {
+  width: 100%;
+  padding: 10px 12px 12px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.card-tile-info:active {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.card-tile-values {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.card-tile-detail {
+  padding: 0 12px 14px;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 12px;
 }
 
 .lang-EN { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
@@ -397,27 +482,25 @@ header {
 .lang-KR { background: linear-gradient(135deg, #8b5cf6, #4c1d95); }
 .lang-ES { background: linear-gradient(135deg, #f59e0b, #78350f); }
 
-.card-body { flex: 1; min-width: 0; }
-
 .card-name {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
+  line-height: 1.25;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   letter-spacing: -0.01em;
 }
 
 .card-meta {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
-  margin-top: 3px;
+  margin: 4px 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .live-dot {
@@ -434,12 +517,10 @@ header {
   display: none;
 }
 
-.card-value-col { text-align: right; flex-shrink: 0; }
-
 .card-value {
   font-family: var(--mono);
-  font-weight: 500;
-  font-size: 15px;
+  font-weight: 600;
+  font-size: 14px;
   color: var(--text);
 }
 
@@ -447,7 +528,6 @@ header {
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 500;
-  margin-top: 3px;
 }
 
 .card-pnl.up { color: var(--green); }
@@ -458,15 +538,6 @@ header {
 
 .card-delta-up { color: var(--green); }
 .card-delta-down { color: var(--red); }
-
-.expanded-detail {
-  width: 100%;
-  margin-top: 4px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  display: grid;
-  gap: 10px;
-}
 
 .detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
 .detail-label { color: var(--text-muted); }
@@ -651,55 +722,69 @@ header {
   -webkit-overflow-scrolling: touch;
 }
 
-.add-token-preview {
+.add-card-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
-.add-token-ring {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  border: 2px dashed rgba(139, 92, 246, 0.4);
-  background: rgba(139, 92, 246, 0.08);
+.add-card-frame {
+  width: min(200px, 58vw);
+  aspect-ratio: 5 / 7;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(0, 0, 0, 0.35) 100%
+  );
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
   position: relative;
   cursor: pointer;
-  padding: 0;
   font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  overflow: hidden;
 }
 
-.add-token-ring.has-image {
-  border: 2px solid rgba(139, 92, 246, 0.6);
-  box-shadow: 0 0 24px rgba(139, 92, 246, 0.25);
+.add-card-frame.empty {
+  border: 2px dashed rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.06);
+  box-shadow: none;
 }
 
-.add-token-ring img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.add-card-frame.has-image {
+  border: 1px solid rgba(139, 92, 246, 0.4);
 }
 
-.add-token-placeholder {
-  font-size: 28px;
-  color: rgba(139, 92, 246, 0.5);
-  font-weight: 300;
+.add-card-frame img {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5));
+}
+
+.add-card-placeholder {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 16px;
+  line-height: 1.4;
 }
 
 .add-live-badge {
   position: absolute;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 8px;
+  left: 8px;
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   padding: 3px 8px;
   border-radius: 6px;
   background: var(--green);
@@ -1045,7 +1130,18 @@ header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 .ac-item:last-child { border-bottom: none; }
-.ac-thumb { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--glass); }
+.ac-thumb {
+  width: 36px;
+  aspect-ratio: 5 / 7;
+  border-radius: 4px;
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ac-thumb:empty {
+  min-height: 50px;
+}
 .ac-name { font-size: 14px; font-weight: 500; }
 .ac-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 .ac-price { font-size: 12px; font-family: var(--mono); color: var(--green); }
@@ -1209,7 +1305,15 @@ header {
   padding: 20px;
 }
 .lightbox.open { display: flex; }
-.lightbox img { max-width: 100%; max-height: 100%; border-radius: 16px; }
+.lightbox img {
+  max-width: min(100%, 340px);
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.6));
+}
 
 .install-hint {
   margin: 0 16px 12px;

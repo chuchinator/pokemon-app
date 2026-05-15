@@ -7,8 +7,8 @@ export default function Filters({ cards, filterLang, onFilterChange }) {
   return (
     <>
       <div className="holdings-header">
-        <h2 className="section-hdr">Holdings</h2>
-        <span className="holdings-count">{counts.ALL} assets</span>
+        <h2 className="section-hdr">Collection</h2>
+        <span className="holdings-count">{counts.ALL} cards</span>
       </div>
       <div className="filters">
         {LANGS.map((lang) => (

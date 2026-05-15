@@ -75,7 +75,11 @@ export default function AddCardSheet({
     setTimeout(() => nameInputRef.current?.focus(), 300);
   }, [open, editingCard]);
 
-  const previewSrc = photo || getCardImageUrl(form.imageSmall) || null;
+  const previewSrc =
+    photo ||
+    getCardImageUrl(form.imageLarge, 'high') ||
+    getCardImageUrl(form.imageSmall, 'high') ||
+    null;
   const isLive = form.lang === 'EN' && form.apiId;
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
   const hideAc = () => setAcState((s) => ({ ...s, show: false }));
@@ -125,7 +129,7 @@ export default function AddCardSheet({
           f.currentValue || (card.price != null ? card.price.toFixed(2) : ''),
         apiId: card.id,
         imageSmall: card.image || '',
-        imageLarge: card.imageLarge || '',
+        imageLarge: card.imageLarge || card.image || '',
       }));
       toast('Cardmarket price loaded (TCGdex)', 'success');
     } catch {
@@ -196,18 +200,18 @@ export default function AddCardSheet({
         </div>
 
         <div className="add-sheet-body">
-          {/* Token preview */}
-          <div className="add-token-preview">
+          {/* Card preview */}
+          <div className="add-card-hero">
             <button
               type="button"
-              className={`add-token-ring ${previewSrc ? 'has-image' : ''}`}
+              className={`add-card-frame ${previewSrc ? 'has-image' : 'empty'}`}
               onClick={() => previewSrc && onPhotoPreview?.(previewSrc)}
-              aria-label="Preview image"
+              aria-label="Preview card"
             >
               {previewSrc ? (
-                <img src={previewSrc} alt="" />
+                <img src={previewSrc} alt={form.name || 'Card'} />
               ) : (
-                <span className="add-token-placeholder">?</span>
+                <span className="add-card-placeholder">Search or add a photo</span>
               )}
               {isLive && <span className="add-live-badge">LIVE</span>}
             </button>
@@ -289,7 +293,7 @@ export default function AddCardSheet({
                   )}
                 {!acState.loading &&
                   acState.results.map((card) => {
-                    const thumb = getCardImageUrl(card.image);
+                    const thumb = getCardImageUrl(card.image, 'high');
                     const number = formatCardNumber(card);
                     return (
                       <div

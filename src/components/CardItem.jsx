@@ -20,7 +20,11 @@ export default function CardItem({
   const deltaPct = cost > 0 ? (delta / cost) * 100 : 0;
   const meta = [card.set, card.number, card.condition].filter(Boolean).join(' · ');
   const isLive = card.lang === 'EN' && card.apiId;
-  const imgSrc = card.photo || getCardImageUrl(card.imageSmall) || '';
+  const imgSrc =
+    card.photo ||
+    getCardImageUrl(card.imageLarge, 'high') ||
+    getCardImageUrl(card.imageSmall, 'high') ||
+    '';
 
   const handleRefresh = async (e) => {
     e.stopPropagation();
@@ -40,46 +44,48 @@ export default function CardItem({
   };
 
   return (
-    <div
-      className={`card-item ${expanded ? 'expanded' : ''}`}
-      onClick={onToggle}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onToggle()}
-    >
-      {imgSrc ? (
-        <div
-          className="card-thumb-wrap"
-          onClick={(e) => {
-            e.stopPropagation();
-            onViewPhoto(card);
-          }}
-          role="presentation"
-        >
-          <img className="card-thumb" src={imgSrc} alt="" loading="lazy" />
-        </div>
-      ) : (
-        <div className="card-thumb-wrap">
-          <div className={`card-thumb-placeholder lang-${card.lang}`}>{card.lang}</div>
-        </div>
-      )}
-      <div className="card-body">
-        <div className="card-name">{card.name}</div>
-        <div className="card-meta">
-          {isLive && <span className="live-dot" />}
+    <article className={`card-tile ${expanded ? 'expanded' : ''}`}>
+      <button
+        type="button"
+        className="card-art"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (imgSrc) onViewPhoto(card);
+        }}
+        aria-label={imgSrc ? `View ${card.name}` : undefined}
+      >
+        {imgSrc ? (
+          <img className="card-art-img" src={imgSrc} alt={card.name} loading="lazy" />
+        ) : (
+          <div className={`card-art-placeholder lang-${card.lang}`}>
+            <span>{card.lang}</span>
+          </div>
+        )}
+        {q > 1 && <span className="card-qty-badge">×{q}</span>}
+        {isLive && <span className="card-live-badge">LIVE</span>}
+      </button>
+
+      <button
+        type="button"
+        className="card-tile-info"
+        onClick={onToggle}
+        aria-expanded={expanded}
+      >
+        <h3 className="card-name">{card.name}</h3>
+        <p className="card-meta">
           {card.lang}
           {meta ? ` · ${meta}` : ''}
-          {q > 1 ? ` · ×${q}` : ''}
+        </p>
+        <div className="card-tile-values">
+          <span className="card-value">{fmt(val)}</span>
+          <span className={`card-pnl ${delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'}`}>
+            {cost > 0 ? `${delta >= 0 ? '+' : ''}${deltaPct.toFixed(1)}%` : '—'}
+          </span>
         </div>
-      </div>
-      <div className="card-value-col">
-        <div className="card-value">{fmt(val)}</div>
-        <div className={`card-pnl ${delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'}`}>
-          {cost > 0 ? `${delta >= 0 ? '+' : ''}${deltaPct.toFixed(2)}%` : '—'}
-        </div>
-      </div>
+      </button>
+
       {expanded && (
-        <div className="expanded-detail" onClick={(e) => e.stopPropagation()}>
+        <div className="card-tile-detail" onClick={(e) => e.stopPropagation()}>
           <div className="detail-row">
             <span className="detail-label">Quantity</span>
             <div className="qty-controls">
@@ -93,11 +99,11 @@ export default function CardItem({
             </div>
           </div>
           <div className="detail-row">
-            <span className="detail-label">Paid per card</span>
+            <span className="detail-label">Paid / card</span>
             <span className="detail-value">{fmt(card.purchasePrice || 0)}</span>
           </div>
           <div className="detail-row">
-            <span className="detail-label">Current per card</span>
+            <span className="detail-label">Market / card</span>
             <span className="detail-value">{fmt(card.currentValue || 0)}</span>
           </div>
           {card.lastPriceUpdate && (
@@ -115,8 +121,6 @@ export default function CardItem({
             >
               {delta >= 0 ? '+' : ''}
               {fmt(delta)}
-              {cost > 0 &&
-                ` (${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}%)`}
             </span>
           </div>
           <div className="detail-actions">
@@ -125,29 +129,15 @@ export default function CardItem({
                 Refresh price
               </button>
             )}
-            <button
-              type="button"
-              className="action-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(card);
-              }}
-            >
+            <button type="button" className="action-btn" onClick={() => onEdit(card)}>
               Edit
             </button>
-            <button
-              type="button"
-              className="action-btn danger"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(card.id);
-              }}
-            >
+            <button type="button" className="action-btn danger" onClick={() => onDelete(card.id)}>
               Delete
             </button>
           </div>
         </div>
       )}
-    </div>
+    </article>
   );
 }
