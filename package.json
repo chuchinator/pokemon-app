@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "server": "node server/index.mjs",
     "sync:server": "bash scripts/run-home-server.sh",
-    "sync:tunnel": "bash scripts/start-sync-stack.sh",
+    "sync:tunnel": "bash scripts/run-tunnel.sh",
+    "tunnel:setup": "bash scripts/setup-stable-tunnel.sh",
     "start": "npm run build && STATIC_DIR=dist node server/index.mjs"
   },
   "dependencies": {

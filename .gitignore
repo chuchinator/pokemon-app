@@ -10,3 +10,4 @@ server/data/users.json
 server/data/cards/
 server/.env
 server/.tunnel-url
+cloudflared/config.yml

@@ -1,0 +1,12 @@
+# Stable Cloudflare tunnel — copy to config.yml after setup, or run:
+#   npm run tunnel:setup -- pokefolio.yourdomain.com
+#
+# credentials-file must point to the JSON created by: cloudflared tunnel create pokefolio
+
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /Users/YOUR_USER/.cloudflared/YOUR_TUNNEL_ID.json
+
+ingress:
+  - hostname: pokefolio.yourdomain.com
+    service: http://localhost:3456
+  - service: http_status:404
