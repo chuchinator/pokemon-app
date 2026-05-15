@@ -17,8 +17,35 @@ export function getLocaleForLang(lang) {
   return LANG_TO_LOCALE[lang] || 'en';
 }
 
+/** Non-EN: discover cards by English name; card numbers use each locale’s catalog. */
+export function usesEnglishSearch(lang) {
+  return lang !== 'EN';
+}
+
+export function getSearchLang(lang) {
+  return usesEnglishSearch(lang) ? 'EN' : lang;
+}
+
+/** Catalog used for number lookups (physical card numbers match this locale). */
+export function getNumberSearchLang(lang) {
+  return lang;
+}
+
 function apiBase(lang) {
   return `${API_ROOT}/${getLocaleForLang(lang)}`;
+}
+
+const NUMBER_QUERY = /^\d+[a-zA-Z]?(\s*\/\s*\d+)?$/;
+
+export function isNumberQuery(query) {
+  return NUMBER_QUERY.test(String(query).trim());
+}
+
+/** @returns {{ localId: string, official?: string } | null} */
+export function parseCardNumberInput(input) {
+  const m = String(input).trim().match(/^(\d+[a-zA-Z]?)\s*(?:\/\s*(\d+))?$/);
+  if (!m) return null;
+  return { localId: m[1], official: m[2] };
 }
 
 /** @param {string} base e.g. https://assets.tcgdex.net/en/swsh/swsh3/136 */
@@ -56,6 +83,16 @@ export function formatCardNumber(card) {
   return official ? `${card.localId}/${official}` : String(card.localId);
 }
 
+/** Set code + number for autocomplete rows when set object is missing. */
+export function formatSearchResultMeta(card) {
+  const number = formatCardNumber(card) || card.localId;
+  const setLabel = card.set?.name || card.set?.id;
+  const setFromId =
+    !setLabel && card.id?.includes('-') ? card.id.replace(/-[^-]+$/, '') : '';
+  const parts = [number, setLabel || setFromId].filter(Boolean);
+  return parts.join(' · ') || 'Tap to load';
+}
+
 /** Map TCGdex card → fields used by the app */
 export function normalizeCard(card) {
   if (!card) return null;
@@ -73,14 +110,66 @@ export function normalizeCard(card) {
 
 export async function searchCards(query, options = {}) {
   const { lang = 'EN', signal } = options;
+  const searchLang = getSearchLang(lang);
   const params = new URLSearchParams({
     name: query.trim(),
     'pagination:itemsPerPage': '12',
   });
-  const res = await fetch(`${apiBase(lang)}/cards?${params}`, { signal });
+  const res = await fetch(`${apiBase(searchLang)}/cards?${params}`, { signal });
   if (!res.ok) throw new Error(`API ${res.status}`);
   const json = await res.json();
   return Array.isArray(json) ? json : [];
+}
+
+export async function searchCardsByNumber(numberInput, options = {}) {
+  const parsed = parseCardNumberInput(numberInput);
+  if (!parsed) return [];
+  const { lang = 'EN', setQuery = '', signal } = options;
+  const catalogLang = getNumberSearchLang(lang);
+  const params = new URLSearchParams({
+    localId: parsed.localId,
+    'pagination:itemsPerPage': '20',
+  });
+  const set = setQuery.trim();
+  if (set) params.set('set.name', set);
+  const res = await fetch(`${apiBase(catalogLang)}/cards?${params}`, { signal });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  const json = await res.json();
+  return Array.isArray(json) ? json : [];
+}
+
+/** Run name or card-number search for the selected portfolio language. */
+export async function searchCardsSmart(query, options = {}) {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  if (isNumberQuery(q)) {
+    return searchCardsByNumber(q, options);
+  }
+  return searchCards(q, options);
+}
+
+/** Load card for portfolio language; English catalog pick → EN data (+ locale when same id exists). */
+export async function fetchCardForPortfolio(apiId, portfolioLang, signal) {
+  const searchLang = getSearchLang(portfolioLang);
+  if (portfolioLang === searchLang) {
+    return fetchCard(apiId, { lang: portfolioLang, signal });
+  }
+
+  const enCard = await fetchCard(apiId, { lang: 'EN', signal });
+  try {
+    const localized = await fetchCard(apiId, { lang: portfolioLang, signal });
+    if (localized?.name || localized?.image) {
+      return {
+        ...enCard,
+        ...localized,
+        image: localized.image || enCard.image,
+        pricing: localized.pricing?.cardmarket ? localized.pricing : enCard.pricing,
+      };
+    }
+  } catch {
+    /* EN catalog id often has no row in JP/CN/KR */
+  }
+  return enCard;
 }
 
 export async function fetchCard(apiId, options = {}) {

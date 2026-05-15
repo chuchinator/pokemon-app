@@ -27,7 +27,7 @@ export default function CardList({
           </div>
           <div className="empty-sub">
             {allCards.length === 0
-              ? 'Tap Add asset to get started'
+              ? 'Open Search to add your first card'
               : 'Try a different filter'}
           </div>
         </div>

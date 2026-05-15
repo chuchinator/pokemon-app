@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  fetchCard,
-  formatCardNumber,
+  fetchCardForPortfolio,
+  formatSearchResultMeta,
   getCardImageUrl,
   langHasAutoPricing,
   normalizeCard,
-  searchCards,
+  searchCardsSmart,
+  usesEnglishSearch,
 } from '../api/pokemon';
-import { CONDITIONS, LANG_SEARCH_HINTS } from '../constants';
+import { CONDITIONS, LANG_SEARCH_HINTS, SEARCH_PLACEHOLDERS } from '../constants';
 import { fmt } from '../utils/format';
 import { resizeImage } from '../utils/image';
 
@@ -35,12 +36,14 @@ const emptyForm = () => ({
 
 export default function AddCardSheet({
   open,
+  variant = 'sheet',
   editingCard,
   onClose,
   onSave,
   onPhotoPreview,
   toast,
 }) {
+  const isPage = variant === 'page';
   const [form, setForm] = useState(emptyForm);
   const [photo, setPhoto] = useState(null);
   const [acState, setAcState] = useState({ show: false, loading: false, results: [], error: null });
@@ -74,20 +77,16 @@ export default function AddCardSheet({
     }
     setAcState({ show: false, loading: false, results: [], error: null });
     setTimeout(() => nameInputRef.current?.focus(), 300);
-  }, [open, editingCard]);
+  }, [open, editingCard, isPage]);
 
   const previewSrc = photo || getCardImageUrl(form.imageSmall) || null;
   const isLive = Boolean(form.apiId);
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
   const hideAc = () => setAcState((s) => ({ ...s, show: false }));
 
-  const handleNameChange = (value) => {
-    setField('name', value);
-    if (suppressAcRef.current) {
-      suppressAcRef.current = false;
-      return;
-    }
-    if (value.trim().length < 2) {
+  const runCardSearch = (query) => {
+    const q = query.trim();
+    if (q.length < 2) {
       hideAc();
       return;
     }
@@ -97,8 +96,9 @@ export default function AddCardSheet({
       if (acAbortRef.current) acAbortRef.current.abort();
       acAbortRef.current = new AbortController();
       try {
-        const results = await searchCards(value.trim(), {
+        const results = await searchCardsSmart(q, {
           lang: form.lang,
+          setQuery: form.set,
           signal: acAbortRef.current.signal,
         });
         setAcState({ show: true, loading: false, results, error: null });
@@ -114,10 +114,25 @@ export default function AddCardSheet({
     }, 280);
   };
 
+  const handleNameChange = (value) => {
+    setField('name', value);
+    if (suppressAcRef.current) {
+      suppressAcRef.current = false;
+      return;
+    }
+    runCardSearch(value);
+  };
+
+  const handleNumberChange = (value) => {
+    setField('number', value);
+    if (suppressAcRef.current) return;
+    runCardSearch(value);
+  };
+
   const selectAcItem = async (apiId) => {
     hideAc();
     try {
-      const raw = await fetchCard(apiId, { lang: form.lang });
+      const raw = await fetchCardForPortfolio(apiId, form.lang);
       const card = normalizeCard(raw);
       suppressAcRef.current = true;
       setForm((f) => ({
@@ -188,26 +203,43 @@ export default function AddCardSheet({
     onSave(data, editingCard?.id);
   };
 
+  if (!open) return null;
+
+  const shellClass = isPage ? 'add-page' : `sheet add-sheet ${open ? 'open' : ''}`;
+
   return (
     <>
-      <div
-        className={`sheet-overlay ${open ? 'open' : ''}`}
-        onClick={onClose}
-        role="presentation"
-      />
+      {!isPage && (
+        <div
+          className={`sheet-overlay ${open ? 'open' : ''}`}
+          onClick={onClose}
+          role="presentation"
+        />
+      )}
 
-      <div className={`sheet add-sheet ${open ? 'open' : ''}`}>
-        <div className="add-sheet-header">
-          <button type="button" className="add-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-          <div className="add-sheet-titles">
-            <h2 className="add-sheet-title">{editingCard ? 'Edit asset' : 'Add asset'}</h2>
-            <p className="add-sheet-sub">
-              {editingCard ? 'Update this holding' : 'Add a card to your portfolio'}
-            </p>
+      <div className={shellClass}>
+        <div className={isPage ? 'tab-page-header add-page-header' : 'add-sheet-header'}>
+          {!isPage && (
+            <button type="button" className="add-close" onClick={onClose} aria-label="Close">
+              ×
+            </button>
+          )}
+          <div className={isPage ? '' : 'add-sheet-titles'}>
+            {isPage ? (
+              <>
+                <h1 className="tab-page-title">Search</h1>
+                <p className="tab-page-sub">Find a card and add it to your portfolio</p>
+              </>
+            ) : (
+              <>
+                <h2 className="add-sheet-title">{editingCard ? 'Edit asset' : 'Add asset'}</h2>
+                <p className="add-sheet-sub">
+                  {editingCard ? 'Update this holding' : 'Add a card to your portfolio'}
+                </p>
+              </>
+            )}
           </div>
-          <div className="add-header-spacer" />
+          {!isPage && <div className="add-header-spacer" />}
         </div>
 
         <div className="add-sheet-body">
@@ -275,7 +307,7 @@ export default function AddCardSheet({
                 id="f-name"
                 type="text"
                 className="add-search-input"
-                placeholder="Search card… e.g. Charizard"
+                placeholder={SEARCH_PLACEHOLDERS[form.lang] || SEARCH_PLACEHOLDERS.EN}
                 autoComplete="off"
                 value={form.name}
                 onChange={(e) => handleNameChange(e.target.value)}
@@ -301,7 +333,7 @@ export default function AddCardSheet({
                 {!acState.loading &&
                   acState.results.map((card) => {
                     const thumb = getCardImageUrl(card.image);
-                    const number = formatCardNumber(card);
+                    const meta = formatSearchResultMeta(card);
                     return (
                       <div
                         key={card.id}
@@ -318,7 +350,7 @@ export default function AddCardSheet({
                         <div style={{ minWidth: 0 }}>
                           <div className="ac-name">{card.name}</div>
                           <div className="ac-meta">
-                            {number || card.localId || 'Tap to load price'}
+                            {meta}
                           </div>
                         </div>
                         <div className="ac-price ac-price-hint">↵</div>
@@ -339,7 +371,7 @@ export default function AddCardSheet({
                   id="f-set"
                   type="text"
                   className="add-input"
-                  placeholder="Surging Sparks"
+                  placeholder={usesEnglishSearch(form.lang) ? 'Optional — narrows number search' : 'Surging Sparks'}
                   value={form.set}
                   onChange={(e) => setField('set', e.target.value)}
                 />
@@ -351,9 +383,9 @@ export default function AddCardSheet({
                     id="f-number"
                     type="text"
                     className="add-input"
-                    placeholder="199/191"
+                    placeholder={usesEnglishSearch(form.lang) ? 'e.g. 199 or 199/191' : '199/191'}
                     value={form.number}
-                    onChange={(e) => setField('number', e.target.value)}
+                    onChange={(e) => handleNumberChange(e.target.value)}
                   />
                 </div>
                 <div className="add-field">
@@ -423,12 +455,14 @@ export default function AddCardSheet({
           </div>
         </div>
 
-        <div className="add-sheet-footer">
-          <button type="button" className="add-btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
+        <div className={`add-sheet-footer ${isPage ? 'add-page-footer' : ''}`}>
+          {!isPage && (
+            <button type="button" className="add-btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+          )}
           <button type="button" className="add-btn-primary" onClick={handleSubmit}>
-            {editingCard ? 'Save' : 'Add asset'}
+            {editingCard ? 'Save' : isPage ? 'Add to portfolio' : 'Add asset'}
           </button>
         </div>
       </div>

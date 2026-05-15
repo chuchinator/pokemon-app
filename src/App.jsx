@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { extractPrice, fetchCard, getCardImageUrl } from './api/pokemon';
+import { extractPrice, fetchCardForPortfolio, getCardImageUrl } from './api/pokemon';
 import { initSyncConfig } from './api/syncConfig';
 import AuthScreen from './components/AuthScreen';
 import AddCardSheet from './components/AddCardSheet';
@@ -11,7 +11,9 @@ import InstallHint, {
   shouldShowInstallHint,
 } from './components/InstallHint';
 import Lightbox from './components/Lightbox';
-import MenuSheet, { showStorageUsage } from './components/MenuSheet';
+import BottomNav from './components/BottomNav';
+import SettingsPanel from './components/SettingsPanel';
+import { showStorageUsage } from './components/MenuSheet';
 import Toast from './components/Toast';
 import WalletHero from './components/WalletHero';
 import { useAuth } from './hooks/useAuth';
@@ -61,13 +63,18 @@ function PortfolioApp({ auth }) {
   const [expandedId, setExpandedId] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('home');
   const [lightboxSrc, setLightboxSrc] = useState(null);
   const [installHint, setInstallHint] = useState(shouldShowInstallHint);
 
   const openSheet = useCallback((card = null) => {
-    setEditingCard(card);
-    setSheetOpen(true);
+    if (card) {
+      setEditingCard(card);
+      setSheetOpen(true);
+    } else {
+      setEditingCard(null);
+      setActiveTab('search');
+    }
   }, []);
 
   const closeSheet = useCallback(() => {
@@ -88,10 +95,12 @@ function PortfolioApp({ auth }) {
           added: Date.now(),
         };
         setCards((prev) => [newCard, ...prev]);
+        setActiveTab('home');
+        showToast('Card added', 'success');
       }
       closeSheet();
     },
-    [setCards, closeSheet],
+    [setCards, closeSheet, showToast],
   );
 
   const handleToggle = useCallback((id) => {
@@ -166,7 +175,7 @@ function PortfolioApp({ auth }) {
 
     for (const c of linked) {
       try {
-        const data = await fetchCard(c.apiId, { lang: c.lang });
+        const data = await fetchCardForPortfolio(c.apiId, c.lang);
         const price = extractPrice(data);
         const idx = updates.findIndex((x) => x.id === c.id);
         if (price && idx !== -1) {
@@ -298,66 +307,84 @@ function PortfolioApp({ auth }) {
     setInstallHint(false);
   }, []);
 
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+    if (tab !== 'search') {
+      setSheetOpen(false);
+      setEditingCard(null);
+    }
+  }, []);
+
   return (
     <>
       <div className="app">
         <Header
-          onMenuOpen={() => setMenuOpen(true)}
           syncStatus={syncStatus}
           syncError={syncError}
           syncLastOk={syncLastOk}
           onSyncRetry={checkSync}
           userEmail={auth.user?.email}
         />
-        <InstallHint visible={installHint} onDismiss={dismissHint} />
-        <WalletHero cards={cards} />
-        <div className="holdings-panel">
-          <Filters cards={cards} filterLang={filterLang} onFilterChange={handleFilterChange} />
-          <CardList
-            cards={cards}
-            allCards={cards}
-            filterLang={filterLang}
-            expandedId={expandedId}
-            onToggle={handleToggle}
-            onInc={handleInc}
-            onDec={handleDec}
-            onEdit={openSheet}
-            onDelete={handleDelete}
-            onViewPhoto={handleViewPhoto}
-            onRefreshPrice={handleRefreshPrice}
+
+        {activeTab === 'home' && (
+          <>
+            <InstallHint visible={installHint} onDismiss={dismissHint} />
+            <WalletHero cards={cards} />
+            <div className="holdings-panel">
+              <Filters cards={cards} filterLang={filterLang} onFilterChange={handleFilterChange} />
+              <CardList
+                cards={cards}
+                allCards={cards}
+                filterLang={filterLang}
+                expandedId={expandedId}
+                onToggle={handleToggle}
+                onInc={handleInc}
+                onDec={handleDec}
+                onEdit={openSheet}
+                onDelete={handleDelete}
+                onViewPhoto={handleViewPhoto}
+                onRefreshPrice={handleRefreshPrice}
+                toast={showToast}
+              />
+            </div>
+          </>
+        )}
+
+        {activeTab === 'search' && (
+          <AddCardSheet
+            variant="page"
+            open
+            editingCard={null}
+            onClose={() => setActiveTab('home')}
+            onSave={handleSaveCard}
+            onPhotoPreview={setLightboxSrc}
             toast={showToast}
           />
-        </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <SettingsPanel
+            onAction={handleMenuAction}
+            syncStatus={syncStatus}
+            syncError={syncError}
+            userEmail={auth.user?.email}
+            onLogout={auth.needsAuth ? auth.logout : null}
+          />
+        )}
       </div>
 
-      <button
-        type="button"
-        className="fab"
-        aria-label="Add card"
-        onClick={() => openSheet(null)}
-      >
-        + Add asset
-      </button>
+      <BottomNav active={activeTab} onChange={handleTabChange} />
 
       <Toast toast={toast} />
 
       <AddCardSheet
+        variant="sheet"
         open={sheetOpen}
         editingCard={editingCard}
         onClose={closeSheet}
         onSave={handleSaveCard}
         onPhotoPreview={setLightboxSrc}
         toast={showToast}
-      />
-
-      <MenuSheet
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        onAction={handleMenuAction}
-        syncStatus={syncStatus}
-        syncError={syncError}
-        userEmail={auth.user?.email}
-        onLogout={auth.needsAuth ? auth.logout : null}
       />
 
       <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />

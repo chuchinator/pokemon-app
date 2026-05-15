@@ -1,7 +1,6 @@
 import SyncStatus from './SyncStatus';
 
 export default function Header({
-  onMenuOpen,
   syncStatus,
   syncError,
   syncLastOk,
@@ -24,9 +23,6 @@ export default function Header({
           lastOk={syncLastOk}
           onRetry={onSyncRetry}
         />
-        <button type="button" className="header-btn" onClick={onMenuOpen} aria-label="Settings">
-          ⚙
-        </button>
       </div>
     </header>
   );

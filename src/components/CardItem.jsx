@@ -1,4 +1,4 @@
-import { extractPrice, fetchCard, getCardImageUrl } from '../api/pokemon';
+import { extractPrice, fetchCardForPortfolio, getCardImageUrl } from '../api/pokemon';
 import { fmt } from '../utils/format';
 
 export default function CardItem({
@@ -26,7 +26,7 @@ export default function CardItem({
     e.stopPropagation();
     toast('Fetching price…');
     try {
-      const data = await fetchCard(card.apiId, { lang: card.lang });
+      const data = await fetchCardForPortfolio(card.apiId, card.lang);
       const price = extractPrice(data);
       if (price) {
         onRefreshPrice(card.id, price);

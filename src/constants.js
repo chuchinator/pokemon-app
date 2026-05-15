@@ -7,11 +7,19 @@ export const PRICE_API_NOTE =
   'EN & ES: Cardmarket EUR via TCGdex · JP/CN/KR: images & names · prices when available · ~24h';
 
 export const LANG_SEARCH_HINTS = {
-  EN: 'English — search, images & Cardmarket EUR (updates ~24h)',
-  JP: 'Japanese — search & images; market prices usually unavailable',
-  CN: 'Chinese (Traditional catalog) — search & images; limited coverage',
-  KR: 'Korean — search & images; catalog still small on TCGdex',
-  ES: 'Spanish — search, images & Cardmarket EUR when listed',
+  EN: 'Search by name or number (e.g. Charizard or 136/191)',
+  JP: 'English name or card number — pick from results',
+  CN: 'English name or card number — pick from results',
+  KR: 'English name or card number — pick from results',
+  ES: 'English name or card number — pick from results',
+};
+
+export const SEARCH_PLACEHOLDERS = {
+  EN: 'Search… e.g. Charizard or 136',
+  JP: 'English name or number… e.g. Pikachu or 025',
+  CN: 'English name or number… e.g. Pikachu or 025',
+  KR: 'English name or number… e.g. Pikachu or 025',
+  ES: 'English name or number… e.g. Charizard or 136',
 };
 
 export const LANGS = ['ALL', 'EN', 'JP', 'CN', 'KR', 'ES'];
