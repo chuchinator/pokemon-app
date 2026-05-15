@@ -1,4 +1,4 @@
-import { extractPrice, fetchCard } from '../api/pokemon';
+import { extractPrice, fetchCard, getCardImageUrl } from '../api/pokemon';
 import { fmt } from '../utils/format';
 
 export default function CardItem({
@@ -20,7 +20,7 @@ export default function CardItem({
   const deltaPct = cost > 0 ? (delta / cost) * 100 : 0;
   const meta = [card.set, card.number, card.condition].filter(Boolean).join(' · ');
   const isLive = card.lang === 'EN' && card.apiId;
-  const imgSrc = card.photo || card.imageSmall || '';
+  const imgSrc = card.photo || getCardImageUrl(card.imageSmall) || '';
 
   const handleRefresh = async (e) => {
     e.stopPropagation();

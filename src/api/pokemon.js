@@ -7,8 +7,12 @@ const API_BASE = 'https://api.tcgdex.net/v2/en';
 /** @param {string} base e.g. https://assets.tcgdex.net/en/swsh/swsh3/136 */
 export function getCardImageUrl(base, quality = 'low', ext = 'webp') {
   if (!base) return null;
-  if (base.includes('.')) return base;
-  return `${base}/${quality}.${ext}`;
+  const trimmed = String(base).replace(/\/$/, '');
+  // Only skip suffix when URL already ends with an image extension (not tcgdx.net dots)
+  if (/\.(webp|png|jpe?g|gif|avif)(\?.*)?$/i.test(trimmed)) {
+    return trimmed;
+  }
+  return `${trimmed}/${quality}.${ext}`;
 }
 
 /** Cardmarket EUR — trend / 7d / 30d avg per TCGdex docs */

@@ -75,7 +75,7 @@ export default function AddCardSheet({
     setTimeout(() => nameInputRef.current?.focus(), 300);
   }, [open, editingCard]);
 
-  const previewSrc = photo || form.imageSmall || null;
+  const previewSrc = photo || getCardImageUrl(form.imageSmall) || null;
   const isLive = form.lang === 'EN' && form.apiId;
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
   const hideAc = () => setAcState((s) => ({ ...s, show: false }));

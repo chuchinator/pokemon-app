@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { extractPrice, fetchCard } from './api/pokemon';
+import { extractPrice, fetchCard, getCardImageUrl } from './api/pokemon';
 import { initSyncConfig } from './api/syncConfig';
 import AuthScreen from './components/AuthScreen';
 import AddCardSheet from './components/AddCardSheet';
@@ -146,7 +146,10 @@ function PortfolioApp({ auth }) {
   );
 
   const handleViewPhoto = useCallback((card) => {
-    const src = card.imageLarge || card.photo || card.imageSmall;
+    const src =
+      card.photo ||
+      getCardImageUrl(card.imageLarge, 'high') ||
+      getCardImageUrl(card.imageSmall);
     if (src) setLightboxSrc(src);
   }, []);
 
