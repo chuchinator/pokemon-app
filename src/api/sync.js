@@ -1,6 +1,5 @@
 import { getSessionToken, hasSyncServer } from './auth';
-
-const SYNC_URL = (import.meta.env.VITE_SYNC_URL || '').replace(/\/$/, '');
+import { getSyncUrl } from './syncConfig';
 
 /** Cloud server URL is set (login required for sync). */
 export function isSyncEnabled() {
@@ -13,16 +12,17 @@ export function isSyncConfigured() {
 
 export function getSyncInfo() {
   if (!hasSyncServer()) return null;
-  if (!SYNC_URL) return { label: 'your server', url: '' };
+  const url = getSyncUrl();
+  if (!url) return { label: 'your server', url: '' };
   try {
-    return { label: new URL(SYNC_URL).host, url: SYNC_URL };
+    return { label: new URL(url).host, url };
   } catch {
-    return { label: SYNC_URL, url: SYNC_URL };
+    return { label: url, url };
   }
 }
 
 function apiPath(path) {
-  return `${SYNC_URL}${path}`;
+  return `${getSyncUrl()}${path}`;
 }
 
 function authHeaders() {

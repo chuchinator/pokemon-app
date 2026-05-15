@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { extractPrice, fetchCard } from './api/pokemon';
+import { initSyncConfig } from './api/syncConfig';
 import AuthScreen from './components/AuthScreen';
 import AddCardSheet from './components/AddCardSheet';
 import CardList from './components/CardList';

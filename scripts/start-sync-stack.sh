@@ -40,6 +40,9 @@ cloudflared tunnel --url "http://localhost:${PORT}" 2>&1 | tee /tmp/pokefolio-tu
     url=$(echo "$line" | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1)
     if [[ -n "$url" && "$url" != "$(cat server/.tunnel-url 2>/dev/null || true)" ]]; then
       echo "$url" > server/.tunnel-url
+      printf '%s\n' "{\"syncUrl\": \"$url\"}" > public/sync-config.json
+      echo ""
+      echo "  Updated public/sync-config.json — commit & push for GitHub Pages."
       echo ""
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       echo "  Public URL: $url"

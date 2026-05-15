@@ -1,13 +1,12 @@
 import { SESSION_KEY } from '../constants';
-
-const SYNC_URL = (import.meta.env.VITE_SYNC_URL || '').replace(/\/$/, '');
+import { getSyncUrl } from './syncConfig';
 
 export function hasSyncServer() {
-  return Boolean(SYNC_URL);
+  return Boolean(getSyncUrl());
 }
 
 function apiPath(path) {
-  return `${SYNC_URL}${path}`;
+  return `${getSyncUrl()}${path}`;
 }
 
 export function getSessionToken() {
