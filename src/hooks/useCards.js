@@ -1,22 +1,15 @@
 import { useCallback, useState } from 'react';
-import { STORAGE_KEY } from '../constants';
-
-function loadCards() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
+import { loadCardsFromStorage, saveCardsToStorage } from '../utils/storage';
 
 export function useCards(toast) {
-  const [cards, setCards] = useState(loadCards);
+  const [cards, setCards] = useState(loadCardsFromStorage);
 
-  const save = useCallback(
+  const persist = useCallback(
     (nextCards) => {
+      const safe = Array.isArray(nextCards) ? nextCards : [];
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextCards));
-        setCards(nextCards);
+        saveCardsToStorage(safe);
+        setCards(safe);
         return true;
       } catch (e) {
         if (
@@ -33,12 +26,26 @@ export function useCards(toast) {
 
   const updateCards = useCallback(
     (updater) => {
-      const next = typeof updater === 'function' ? updater(cards) : updater;
-      if (save(next)) return next;
-      return cards;
+      setCards((prev) => {
+        const prevSafe = Array.isArray(prev) ? prev : [];
+        const next = typeof updater === 'function' ? updater(prevSafe) : updater;
+        const safe = Array.isArray(next) ? next : [];
+        try {
+          saveCardsToStorage(safe);
+        } catch (e) {
+          if (
+            e.name === 'QuotaExceededError' ||
+            (e.message || '').toLowerCase().includes('quota')
+          ) {
+            toast('Storage full — try removing some photos', 'error');
+          }
+          return prevSafe;
+        }
+        return safe;
+      });
     },
-    [cards, save],
+    [toast],
   );
 
-  return { cards, setCards: updateCards, save };
+  return { cards, setCards: updateCards, save: persist };
 }
