@@ -40,6 +40,17 @@ export async function loadCardsFromServer() {
   return Array.isArray(data) ? data : [];
 }
 
+/** Ping server + verify auth (for connection indicator). */
+export async function checkSyncConnection() {
+  const health = await fetch(apiPath('/api/health'), { method: 'GET' });
+  if (!health.ok) throw new Error('Server not reachable');
+
+  const res = await fetch(apiPath('/api/cards'), { headers: authHeaders() });
+  if (res.status === 401) throw new Error('Invalid sync token');
+  if (!res.ok) throw new Error(`Server error (${res.status})`);
+  return true;
+}
+
 export async function saveCardsToServer(cards) {
   const res = await fetch(apiPath('/api/cards'), {
     method: 'PUT',

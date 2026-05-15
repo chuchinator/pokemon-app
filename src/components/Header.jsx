@@ -1,4 +1,6 @@
-export default function Header({ onMenuOpen }) {
+import SyncStatus from './SyncStatus';
+
+export default function Header({ onMenuOpen, syncStatus, syncError, syncLastOk, onSyncRetry }) {
   return (
     <header>
       <div className="brand">
@@ -8,9 +10,17 @@ export default function Header({ onMenuOpen }) {
           <span className="brand-sub">Card portfolio</span>
         </div>
       </div>
-      <button type="button" className="header-btn" onClick={onMenuOpen} aria-label="Settings">
-        ⚙
-      </button>
+      <div className="header-actions">
+        <SyncStatus
+          status={syncStatus}
+          error={syncError}
+          lastOk={syncLastOk}
+          onRetry={onSyncRetry}
+        />
+        <button type="button" className="header-btn" onClick={onMenuOpen} aria-label="Settings">
+          ⚙
+        </button>
+      </div>
     </header>
   );
 }

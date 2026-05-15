@@ -13,12 +13,16 @@ import MenuSheet, { showStorageUsage } from './components/MenuSheet';
 import Toast from './components/Toast';
 import WalletHero from './components/WalletHero';
 import { useCards } from './hooks/useCards';
+import { useSyncStatus } from './hooks/useSyncStatus';
 import { useToast } from './hooks/useToast';
+import { getSyncStatusDetail } from './components/SyncStatus';
 import './App.css';
 
 export default function App() {
   const { toast, showToast } = useToast();
   const { cards, setCards } = useCards(showToast);
+  const { status: syncStatus, error: syncError, lastOk: syncLastOk, check: checkSync } =
+    useSyncStatus();
 
   const [filterLang, setFilterLang] = useState('ALL');
   const [expandedId, setExpandedId] = useState(null);
@@ -227,10 +231,21 @@ export default function App() {
       else if (action === 'importFile' && file) importJson(file);
       else if (action === 'storage') showStorageUsage(cards);
       else if (action === 'syncInfo') {
-        showToast('Cloud sync is on — edits save to your home server', 'success');
+        checkSync();
+        alert(getSyncStatusDetail(syncStatus, syncError, syncLastOk));
       }
     },
-    [refreshAllPrices, copyNonEnglish, exportJson, importJson, cards],
+    [
+      refreshAllPrices,
+      copyNonEnglish,
+      exportJson,
+      importJson,
+      cards,
+      syncStatus,
+      syncError,
+      syncLastOk,
+      checkSync,
+    ],
   );
 
   const handleFilterChange = useCallback((lang) => {
@@ -246,7 +261,13 @@ export default function App() {
   return (
     <>
       <div className="app">
-        <Header onMenuOpen={() => setMenuOpen(true)} />
+        <Header
+          onMenuOpen={() => setMenuOpen(true)}
+          syncStatus={syncStatus}
+          syncError={syncError}
+          syncLastOk={syncLastOk}
+          onSyncRetry={checkSync}
+        />
         <InstallHint visible={installHint} onDismiss={dismissHint} />
         <WalletHero cards={cards} />
         <div className="holdings-panel">
@@ -292,6 +313,8 @@ export default function App() {
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         onAction={handleMenuAction}
+        syncStatus={syncStatus}
+        syncError={syncError}
       />
 
       <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />

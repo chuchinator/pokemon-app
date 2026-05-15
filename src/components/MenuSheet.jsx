@@ -35,22 +35,28 @@ const BASE_MENU_ITEMS = [
   },
 ];
 
-export default function MenuSheet({ open, onClose, onAction }) {
+export default function MenuSheet({ open, onClose, onAction, syncStatus, syncError }) {
   const importRef = useRef(null);
 
   const menuItems = useMemo(() => {
     const items = [...BASE_MENU_ITEMS];
     const sync = getSyncInfo();
     if (isSyncEnabled() && sync) {
+      const statusSub =
+        syncStatus === 'online'
+          ? `Connected to ${sync.label}`
+          : syncStatus === 'checking'
+            ? 'Checking connection…'
+            : syncError || `Offline — ${sync.label}`;
       items.unshift({
         action: 'syncInfo',
-        icon: '☁',
-        title: 'Cloud sync',
-        sub: `Collection stored on ${sync.label}`,
+        icon: syncStatus === 'online' ? '☁' : syncStatus === 'checking' ? '◌' : '☁',
+        title: 'Server connection',
+        sub: statusSub,
       });
     }
     return items;
-  }, []);
+  }, [syncStatus, syncError]);
 
   const handleClick = (action) => {
     if (action === 'import') {
